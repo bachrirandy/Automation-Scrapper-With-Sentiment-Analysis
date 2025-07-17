@@ -1,0 +1,11 @@
+/* Sidebar memiliki lebar tetap */
+.sidebar {
+    width: 280px;
+    min-height: 100vh; /* Tinggi sidebar selalu seukuran layar */
+}
+
+/* Area konten akan mengisi sisa ruang yang tersedia */
+.content {
+    flex-grow: 1;
+    background-color: #f8f9fa; /* Warna latar belakang area konten */
+}
