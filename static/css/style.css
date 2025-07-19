@@ -1,11 +1,88 @@
-/* Sidebar memiliki lebar tetap */
-.sidebar {
-    width: 280px;
-    min-height: 100vh; /* Tinggi sidebar selalu seukuran layar */
+/* Mengimpor font Poppins dari Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+/* Definisi Variabel Warna Tema Baru */
+:root {
+    --theme-primary: #14a2ba;      /* Teal Terang */
+    --theme-primary-dark: #125d72; /* Teal Gelap */
+    --theme-accent: #efe62f;       /* Kuning */
+    --theme-bg: #e7f6f9;           /* Biru Sangat Muda / Off-white */
+    --theme-border: #d9d9d9;       /* Abu-abu Muda */
+
+    /* Menimpa variabel warna utama Bootstrap */
+    --bs-primary: var(--theme-primary);
+    --bs-primary-rgb: 20, 162, 186;
 }
 
-/* Area konten akan mengisi sisa ruang yang tersedia */
-.content {
-    flex-grow: 1;
-    background-color: #f8f9fa; /* Warna latar belakang area konten */
+body {
+    background-color: var(--theme-bg);
+    font-family: 'Poppins', sans-serif; /* Menggunakan font Poppins yang baru */
+}
+
+/* Transisi halus untuk interaksi yang lebih baik */
+.btn, .card, .nav-link {
+    transition: all 0.2s ease-in-out;
+}
+
+/* Mengubah warna default Bootstrap Primary menjadi warna tema baru */
+.btn-primary {
+    --bs-btn-bg: var(--theme-primary);
+    --bs-btn-border-color: var(--theme-primary);
+    --bs-btn-hover-bg: var(--theme-primary-dark);
+    --bs-btn-hover-border-color: var(--theme-primary-dark);
+}
+
+.table-primary {
+    --bs-table-bg: var(--theme-primary);
+    --bs-table-border-color: var(--theme-primary-dark);
+    color: white;
+}
+
+/* Kustomisasi Sidebar dengan warna tema baru */
+.offcanvas.text-bg-dark {
+    background-color: var(--theme-primary-dark) !important; /* Gunakan warna lebih gelap untuk kontras */
+}
+
+/* Styling link di sidebar untuk interaksi yang lebih jelas */
+.offcanvas .nav-link {
+    border-radius: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.offcanvas .nav-link:hover {
+    background-color: var(--theme-primary);
+}
+
+.offcanvas .nav-link.active {
+    background-color: var(--theme-accent);
+    color: var(--theme-primary-dark) !important; /* Teks gelap di atas latar kuning */
+    font-weight: bold;
+}
+
+/* Kustomisasi Kartu agar lebih menonjol */
+.card {
+    border: 1px solid var(--theme-border);
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Kustomisasi Kartu Statistik di Dashboard */
+.card .border-start-primary {
+    border-left: 0.25rem solid var(--theme-primary) !important;
+}
+.card .border-start-success {
+    border-left: 0.25rem solid #198754 !important;
+}
+.card .border-start-danger {
+    border-left: 0.25rem solid #dc3545 !important;
+}
+.card .border-start-secondary {
+    border-left: 0.25rem solid #6c757d !important;
+}
+
+.text-xs {
+    font-size: .7rem;
 }

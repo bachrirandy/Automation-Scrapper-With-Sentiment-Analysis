@@ -1,92 +1,29 @@
 {% extends 'base.html' %}
+{% block page_title %}Selamat Datang{% endblock %}
 
-{% block title %}Home{% endblock %}
+{% block title %}Selamat Datang{% endblock %}
 
 {% block content %}
-<div class="p-5 mb-4 bg-light rounded-3">
+<div class="p-5 mb-4 bg-white rounded-3 shadow-sm border">
     <div class="container-fluid py-5">
-        <div class="row">
+        <div class="row align-items-center">
             <div class="col-md-8">
-                <h1 class="display-5 fw-bold">Halo, Selamat Datang</h1>
-                <p class="fs-4">di Aplikasi Otomatisasi Dokumentasi Pemberitaan PLN UID S2JB.</p>
-                <p>Gunakan menu di samping untuk mulai mengelola data atau klik tombol di bawah untuk langsung menuju halaman pemberitaan.</p>
-                <a href="{{ url_for('pemberitaan') }}" class="btn btn-primary btn-lg" type="button">Lihat Data Pemberitaan</a>
+                <h1 class="display-4 fw-bold">Selamat Datang di Aplikasi Monitoring Pemberitaan</h1>
+                <p class="fs-4 text-muted">PLN UID S2JB</p>
+                <hr class="my-4">
+                <p>Aplikasi ini dirancang untuk mengotomatisasi proses pengambilan, pengolahan, dan dokumentasi berita online.</p>
+                <p>Gunakan menu navigasi di samping untuk memulai:</p>
+                <ul>
+                    <li><strong>Dashboard Analisis:</strong> Untuk melihat statistik dan visualisasi data sentimen.</li>
+                    <li><strong>Data Pemberitaan:</strong> Untuk menambah dan mengelola data berita secara manual.</li>
+                    <li><strong>Monitoring:</strong> Untuk mengatur kata kunci pencarian berita otomatis.</li>
+                </ul>
+                <a href="{{ url_for('analisis') }}" class="btn btn-primary btn-lg mt-3">Mulai Analisis</a>
             </div>
-            <div class="col-md-4 d-flex justify-content-center align-items-center">
-                <canvas id="analog-clock" width="200" height="200"></canvas>
+            <div class="col-md-4 text-center d-none d-md-block">
+                <img src="{{ url_for('static', filename='images/logo-pln-biru.png') }}" alt="Logo PLN" class="img-fluid" style="max-height: 400px;">
             </div>
         </div>
     </div>
 </div>
-
-<script>
-// JavaScript untuk membuat jam analog
-const canvas = document.getElementById('analog-clock');
-const ctx = canvas.getContext('2d');
-const radius = canvas.height / 2;
-ctx.translate(radius, radius);
-
-function drawClock() {
-    // Lingkaran jam
-    ctx.beginPath();
-    ctx.arc(0, 0, radius * 0.9, 0, 2 * Math.PI);
-    ctx.fillStyle = '#333';
-    ctx.fill();
-    ctx.strokeStyle = '#555';
-    ctx.lineWidth = radius * 0.05;
-    ctx.stroke();
-
-    // Titik tengah
-    ctx.beginPath();
-    ctx.arc(0, 0, radius * 0.05, 0, 2 * Math.PI);
-    ctx.fillStyle = 'red';
-    ctx.fill();
-
-    // Angka jam
-    ctx.font = radius * 0.15 + "px arial";
-    ctx.textBaseline = "middle";
-    ctx.textAlign = "center";
-    for(let num = 1; num <= 12; num++){
-        let ang = num * Math.PI / 6;
-        ctx.rotate(ang);
-        ctx.translate(0, -radius * 0.75);
-        ctx.rotate(-ang);
-        ctx.fillStyle = 'white';
-        ctx.fillText(num.toString(), 0, 0);
-        ctx.rotate(ang);
-        ctx.translate(0, radius * 0.75);
-        ctx.rotate(-ang);
-    }
-    
-    // Jarum jam
-    const now = new Date();
-    const hour = now.getHours();
-    const minute = now.getMinutes();
-    const second = now.getSeconds();
-    
-    // Jam
-    let hourAngle = (hour % 12) * Math.PI / 6 + minute * Math.PI / (6 * 60) + second * Math.PI / (360 * 60);
-    drawHand(ctx, hourAngle, radius * 0.5, radius * 0.07, 'white');
-    // Menit
-    let minuteAngle = minute * Math.PI / 30 + second * Math.PI / (30 * 60);
-    drawHand(ctx, minuteAngle, radius * 0.7, radius * 0.05, 'white');
-    // Detik
-    let secondAngle = second * Math.PI / 30;
-    drawHand(ctx, secondAngle, radius * 0.8, radius * 0.02, 'red');
-}
-
-function drawHand(ctx, pos, length, width, color) {
-    ctx.beginPath();
-    ctx.lineWidth = width;
-    ctx.lineCap = "round";
-    ctx.moveTo(0,0);
-    ctx.rotate(pos);
-    ctx.lineTo(0, -length);
-    ctx.strokeStyle = color;
-    ctx.stroke();
-    ctx.rotate(-pos);
-}
-
-setInterval(drawClock, 1000);
-</script>
 {% endblock %}
