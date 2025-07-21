@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block page_title %}Selamat Datang{% endblock %}
+
+{% block title %}Selamat Datang{% endblock %}
+
+{% block content %}
+<div class="p-5 mb-4 bg-white rounded-3 shadow-sm border">
+    <div class="container-fluid py-5">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="display-4 fw-bold">Selamat Datang di Aplikasi Monitoring Pemberitaan</h1>
+                <p class="fs-4 text-muted">PLN UID S2JB</p>
+                <hr class="my-4">
+                <p>Aplikasi ini dirancang untuk mengotomatisasi proses pengambilan, pengolahan, dan dokumentasi berita online.</p>
+                <p>Gunakan menu navigasi di samping untuk memulai:</p>
+                <ul>
+                    <li><strong>Dashboard Analisis:</strong> Untuk melihat statistik dan visualisasi data sentimen.</li>
+                    <li><strong>Data Pemberitaan:</strong> Untuk menambah dan mengelola data berita secara manual.</li>
+                    <li><strong>Monitoring:</strong> Untuk mengatur kata kunci pencarian berita otomatis.</li>
+                </ul>
+                <a href="{{ url_for('analisis') }}" class="btn btn-primary btn-lg mt-3">Mulai Analisis</a>
+            </div>
+            <div class="col-md-4 text-center d-none d-md-block">
+                <img src="{{ url_for('static', filename='images/logo-pln-biru.png') }}" alt="Logo PLN" class="img-fluid" style="max-height: 400px;">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
