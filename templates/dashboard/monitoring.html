@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block page_title %}Monitoring Kata Kunci{% endblock %}
+
+{% block title %}Monitoring Kata Kunci{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Kolom untuk menambah keyword -->
+    <div class="col-md-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Tambah Keyword</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('add_keyword_route') }}" method="POST">
+                    <div class="mb-3">
+                        <label for="keyword" class="form-label">Masukkan kata kunci (contoh: PLN, Listrik, Energi Terbarukan)</label>
+                        <input type="text" name="keyword" id="keyword" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Tambah</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kolom untuk menampilkan daftar keyword -->
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-tags-fill"></i> Daftar Keyword yang Dipantau</h5>
+                <!-- ====================================================== -->
+                <!--          TOMBOL BARU UNTUK JALANKAN SEKARANG           -->
+                <!-- ====================================================== -->
+                <form action="{{ url_for('run_monitoring_now') }}" method="POST">
+                    <button type="submit" class="btn btn-info btn-sm">
+                        <i class="bi bi-search"></i> Jalankan Sekarang
+                    </button>
+                </form>
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    {% for kw in keywords %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ kw.keyword }}
+                        <form action="{{ url_for('delete_keyword_route', keyword_id=kw.id) }}" method="POST" onsubmit="return confirm('Hapus keyword ini?');">
+                            <button type="submit" class="btn btn-danger btn-sm">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item text-center text-muted">Belum ada keyword yang ditambahkan.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-info mt-4" role="alert">
+    <h4 class="alert-heading"><i class="bi bi-info-circle-fill"></i> Cara Kerja</h4>
+    <p>Sistem akan secara otomatis mencari berita baru yang mengandung kata kunci di atas setiap 30 menit. Anda juga bisa memicunya secara manual dengan tombol <strong>Jalankan Sekarang</strong>. Hasilnya akan ditambahkan ke halaman <strong>Data Pemberitaan</strong>.</p>
+</div>
+{% endblock %}
