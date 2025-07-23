@@ -59,7 +59,6 @@ def init_db():
 # --- Fungsi untuk Tabel 'pemberitaan_resmi' ---
 
 def add_pemberitaan(data):
-    """Menambahkan berita baru ke tabel pemberitaan resmi."""
     conn = get_db_connection()
     try:
         conn.execute(
@@ -74,7 +73,6 @@ def add_pemberitaan(data):
         conn.close()
 
 def get_all_pemberitaan():
-    """Mengambil semua berita dari tabel pemberitaan resmi."""
     conn = get_db_connection()
     news_list = conn.execute('SELECT * FROM pemberitaan_resmi ORDER BY id DESC').fetchall()
     conn.close()
@@ -122,7 +120,6 @@ def is_pemberitaan_url_exist(url):
 # --- Fungsi untuk Tabel 'analisis_data' ---
 
 def add_analisis_data(data):
-    """Menambahkan berita baru ke tabel data analisis."""
     conn = get_db_connection()
     try:
         conn.execute(
@@ -135,6 +132,59 @@ def add_analisis_data(data):
         print(f"Error saat menambahkan data analisis: {e}")
     finally:
         conn.close()
+
+def get_filtered_analisis_data(sentiment=None):
+    """Mengambil data analisis dengan filter sentimen."""
+    conn = get_db_connection()
+    if sentiment and sentiment in ['Positif', 'Negatif', 'Netral']:
+        query = "SELECT * FROM analisis_data WHERE sentimen = ? ORDER BY id DESC"
+        analysis_list = conn.execute(query, (sentiment,)).fetchall()
+    else:
+        query = "SELECT * FROM analisis_data ORDER BY id DESC"
+        analysis_list = conn.execute(query).fetchall()
+    conn.close()
+    return analysis_list
+
+def get_latest_analisis_data(limit=10):
+    """Mengambil beberapa berita terbaru dari tabel analisis."""
+    conn = get_db_connection()
+    latest_analysis = conn.execute('SELECT * FROM analisis_data ORDER BY id DESC LIMIT ?', (limit,)).fetchall()
+    conn.close()
+    return latest_analysis
+
+def get_analisis_data_by_id(analysis_id):
+    """Mengambil satu data analisis berdasarkan ID."""
+    conn = get_db_connection()
+    item = conn.execute('SELECT * FROM analisis_data WHERE id = ?', (analysis_id,)).fetchone()
+    conn.close()
+    return item
+
+def update_analisis_data(data):
+    """Memperbarui data di tabel analisis_data."""
+    conn = get_db_connection()
+    conn.execute(
+        '''UPDATE analisis_data SET 
+           judul_pemberitaan = :judul_pemberitaan, 
+           sentimen = :sentimen 
+           WHERE id = :id''',
+        data
+    )
+    conn.commit()
+    conn.close()
+
+def delete_analisis_data_by_id(analysis_id):
+    """Menghapus satu data dari tabel analisis_data."""
+    conn = get_db_connection()
+    conn.execute('DELETE FROM analisis_data WHERE id = ?', (analysis_id,))
+    conn.commit()
+    conn.close()
+
+def delete_all_analisis_data():
+    """Menghapus semua data dari tabel analisis_data."""
+    conn = get_db_connection()
+    conn.execute('DELETE FROM analisis_data')
+    conn.commit()
+    conn.close()
         
 def is_analisis_url_exist(url):
     conn = get_db_connection()
@@ -144,7 +194,7 @@ def is_analisis_url_exist(url):
     conn.close()
     return data is not None
 
-# --- Fungsi untuk Tabel 'keywords' (tetap sama) ---
+# --- Fungsi untuk Tabel 'keywords' ---
 def add_keyword(keyword):
     conn = get_db_connection()
     try:

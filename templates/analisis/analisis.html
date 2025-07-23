@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% block page_title %}Dashboard Analisis{% endblock %}
+
+{% block title %}Dashboard Analisis{% endblock %}
+
+{% block content %}
+<!-- Kartu Statistik yang Bisa Diklik -->
+<div class="row">
+    <!-- Total Berita -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <a href="{{ url_for('analisis') }}" class="text-decoration-none">
+            <div class="card border-start-primary shadow h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col">
+                            <div class="text-primary text-uppercase fw-bold mb-1">Total Berita (Analisis)</div>
+                            <div class="display-6 fw-bold">{{ total_berita }}</div>
+                        </div>
+                        <div class="col-auto"><i class="bi bi-newspaper fs-1 text-secondary opacity-25"></i></div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <!-- Sentimen Positif -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <a href="{{ url_for('analisis', filter='Positif') }}" class="text-decoration-none">
+            <div class="card border-start-success shadow h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col">
+                            <div class="text-success text-uppercase fw-bold mb-1">Positif</div>
+                            <div class="display-6 fw-bold">{{ positif_count }}</div>
+                        </div>
+                        <div class="col-auto"><i class="bi bi-emoji-smile-fill fs-1 text-secondary opacity-25"></i></div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <!-- Sentimen Negatif -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <a href="{{ url_for('analisis', filter='Negatif') }}" class="text-decoration-none">
+            <div class="card border-start-danger shadow h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col">
+                            <div class="text-danger text-uppercase fw-bold mb-1">Negatif</div>
+                            <div class="display-6 fw-bold">{{ negatif_count }}</div>
+                        </div>
+                        <div class="col-auto"><i class="bi bi-emoji-frown-fill fs-1 text-secondary opacity-25"></i></div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <!-- Sentimen Netral -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <a href="{{ url_for('analisis', filter='Netral') }}" class="text-decoration-none">
+            <div class="card border-start-secondary shadow h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col">
+                            <div class="text-secondary text-uppercase fw-bold mb-1">Netral</div>
+                            <div class="display-6 fw-bold">{{ netral_count }}</div>
+                        </div>
+                        <div class="col-auto"><i class="bi bi-emoji-neutral-fill fs-1 text-secondary opacity-25"></i></div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Judul Dinamis untuk Chart -->
+<h3 class="mt-4 mb-3">
+    Visualisasi Data 
+    {% if active_filter %}
+        <span class="badge bg-info text-dark">Filter: {{ active_filter }}</span>
+    {% else %}
+        <span class="badge bg-secondary">Semua Sentimen</span>
+    {% endif %}
+</h3>
+
+<!-- Baris untuk Chart -->
+<div class="row mt-2">
+    <div class="col-lg-7 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header">Tren Sentimen (7 Hari Terakhir)</div>
+            <div class="card-body"><canvas id="trenSentimenChart"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-5 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header">Distribusi Sentimen Pemberitaan</div>
+            <div class="card-body"><canvas id="sentimenChart"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<!-- Baris untuk Berita Terbaru -->
+<div class="row mt-2">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">Berita Terbaru</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Judul Berita</th>
+                                <th>Link</th>
+                                <th>Nama Media</th>
+                                <th>Sentimen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for news in latest_news %}
+                            <tr>
+                                <td>{{ news.judul_pemberitaan }}</td>
+                                <td><a href="{{ news.link_pemberitaan }}" target="_blank">Kunjungi</a></td>
+                                <td>{{ news.nama_media }}</td>
+                                <td>
+                                    {% if news.sentimen == 'Positif' %}<span class="badge bg-success">Positif</span>
+                                    {% elif news.sentimen == 'Negatif' %}<span class="badge bg-danger">Negatif</span>
+                                    {% else %}<span class="badge bg-secondary">Netral</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">Belum ada berita.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabel Log Data Analisis -->
+<div class="card shadow-sm mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+        <h5 class="mb-0 me-3">Log Data Analisis</h5>
+        <div class="btn-group btn-group-sm me-auto" role="group">
+            <a href="{{ url_for('analisis') }}" class="btn btn-outline-primary {% if not active_filter %}active{% endif %}">Semua</a>
+            <a href="{{ url_for('analisis', filter='Positif') }}" class="btn btn-outline-success {% if active_filter == 'Positif' %}active{% endif %}">Positif</a>
+            <a href="{{ url_for('analisis', filter='Negatif') }}" class="btn btn-outline-danger {% if active_filter == 'Negatif' %}active{% endif %}">Negatif</a>
+            <a href="{{ url_for('analisis', filter='Netral') }}" class="btn btn-outline-secondary {% if active_filter == 'Netral' %}active{% endif %}">Netral</a>
+        </div>
+        <form action="{{ url_for('reset_analisis_route') }}" method="POST" onsubmit="return confirm('Hapus semua log data analisis?');">
+            <button type="submit" class="btn btn-danger btn-sm">
+                <i class="bi bi-trash"></i> Reset Log
+            </button>
+        </form>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr class="table-primary">
+                        <th>Judul Pemberitaan</th>
+                        <th>Nama Media</th>
+                        <th>Sentimen</th>
+                        <th class="text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in analysis_list %}
+                    <tr>
+                        <td>{{ item.judul_pemberitaan }}</td>
+                        <td>{{ item.nama_media }}</td>
+                        <td>
+                            {% if item.sentimen == 'Positif' %}<span class="badge bg-success">Positif</span>
+                            {% elif item.sentimen == 'Negatif' %}<span class="badge bg-danger">Negatif</span>
+                            {% else %}<span class="badge bg-secondary">Netral</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group" role="group">
+                                <a href="{{ item.link_pemberitaan }}" target="_blank" class="btn btn-sm btn-outline-primary" title="Kunjungi Link"><i class="bi bi-box-arrow-up-right"></i></a>
+                                <a href="{{ url_for('edit_analisis_route', analysis_id=item.id) }}" class="btn btn-sm btn-warning" title="Edit"><i class="bi bi-pencil-square"></i></a>
+                                
+                                <!-- Tombol Promosikan hanya untuk berita positif -->
+                                {% if item.sentimen == 'Positif' %}
+                                <form action="{{ url_for('promote_news_route', analysis_id=item.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Promosikan berita ini ke tabel pemberitaan resmi?');">
+                                    <button type="submit" class="btn btn-sm btn-success" title="Promosikan ke Pemberitaan"><i class="bi bi-check-circle-fill"></i></button>
+                                </form>
+                                {% endif %}
+
+                                <form action="{{ url_for('delete_analisis_route', analysis_id=item.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus data ini?');">
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Hapus"><i class="bi bi-trash-fill"></i></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">Tidak ada data analisis untuk filter ini.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+// ... (Kode JavaScript untuk chart tidak berubah)
+document.addEventListener("DOMContentLoaded", function() {
+    const pieCtx = document.getElementById('sentimenChart');
+    if (pieCtx) {
+        new Chart(pieCtx, {
+            type: 'doughnut',
+            data: { labels: {{ sentimen_labels|tojson }}, datasets: [{ data: {{ sentimen_data|tojson }}, backgroundColor: {{ sentimen_colors|tojson }}, borderColor: ['#FFFFFF', '#FFFFFF', '#FFFFFF'], }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+        });
+    }
+    const lineCtx = document.getElementById('trenSentimenChart');
+    if (lineCtx) {
+        new Chart(lineCtx, {
+            type: 'line',
+            data: {
+                labels: {{ trend_labels|tojson }},
+                datasets: [
+                    { label: 'Positif', data: {{ trend_positif_data|tojson }}, borderColor: '#198754', backgroundColor: 'rgba(25, 135, 84, 0.1)', fill: true, tension: 0.3 },
+                    { label: 'Negatif', data: {{ trend_negatif_data|tojson }}, borderColor: '#dc3545', backgroundColor: 'rgba(220, 53, 69, 0.1)', fill: true, tension: 0.3 },
+                    { label: 'Netral', data: {{ trend_netral_data|tojson }}, borderColor: '#6c757d', backgroundColor: 'rgba(108, 117, 125, 0.1)', fill: true, tension: 0.3 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+        });
+    }
+});
+</script>
+{% endblock %}

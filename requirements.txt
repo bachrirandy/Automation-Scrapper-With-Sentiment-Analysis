@@ -1,9 +1,9 @@
-# pln-news-monitor/requirements.txt
 Flask
-requests
-newspaper3k
 pandas
-openpyxl 
+openpyxl
 APScheduler
 feedparser
 python-dotenv
+requests-html
+python-dateutil
+lxml_html_clean
