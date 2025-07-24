@@ -1,5 +1,3 @@
-# pln-news-monitor/utils/database.py
-
 import sqlite3
 from config import Config
 
@@ -89,7 +87,6 @@ def update_pemberitaan(data):
     conn.execute(
         '''UPDATE pemberitaan_resmi SET 
            judul_pemberitaan = :judul_pemberitaan, 
-           media_pemberitaan = :media_pemberitaan, 
            kategori_media = :kategori_media 
            WHERE id = :id''',
         data
@@ -145,6 +142,16 @@ def get_filtered_analisis_data(sentiment=None):
     conn.close()
     return analysis_list
 
+# ▼▼▼ FUNGSI BARU DITAMBAHKAN ▼▼▼
+def get_all_positive_analisis_data():
+    """Mengambil semua data analisis dengan sentimen Positif."""
+    conn = get_db_connection()
+    query = "SELECT * FROM analisis_data WHERE sentimen = 'Positif' ORDER BY id DESC"
+    positive_list = conn.execute(query).fetchall()
+    conn.close()
+    return positive_list
+# ▲▲▲ AKHIR FUNGSI BARU ▲▲▲
+
 def get_latest_analisis_data(limit=10):
     """Mengambil beberapa berita terbaru dari tabel analisis."""
     conn = get_db_connection()
@@ -185,7 +192,7 @@ def delete_all_analisis_data():
     conn.execute('DELETE FROM analisis_data')
     conn.commit()
     conn.close()
-        
+    
 def is_analisis_url_exist(url):
     conn = get_db_connection()
     cursor = conn.cursor()

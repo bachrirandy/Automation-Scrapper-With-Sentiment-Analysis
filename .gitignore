@@ -1,0 +1,24 @@
+# Folder environment
+venv/
+.venv/
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*.so
+
+# File log dan database
+*.log
+*.sqlite3
+
+# File sementara/OS
+*.swp
+.DS_Store
+Thumbs.db
+
+# File data
+*.csv
+*.xlsx
+
+# File konfigurasi pribadi
+.env

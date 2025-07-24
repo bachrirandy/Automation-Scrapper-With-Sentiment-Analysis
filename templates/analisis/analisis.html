@@ -4,9 +4,7 @@
 {% block title %}Dashboard Analisis{% endblock %}
 
 {% block content %}
-<!-- Kartu Statistik yang Bisa Diklik -->
 <div class="row">
-    <!-- Total Berita -->
     <div class="col-xl-3 col-md-6 mb-4">
         <a href="{{ url_for('analisis') }}" class="text-decoration-none">
             <div class="card border-start-primary shadow h-100">
@@ -22,7 +20,6 @@
             </div>
         </a>
     </div>
-    <!-- Sentimen Positif -->
     <div class="col-xl-3 col-md-6 mb-4">
         <a href="{{ url_for('analisis', filter='Positif') }}" class="text-decoration-none">
             <div class="card border-start-success shadow h-100">
@@ -38,7 +35,6 @@
             </div>
         </a>
     </div>
-    <!-- Sentimen Negatif -->
     <div class="col-xl-3 col-md-6 mb-4">
         <a href="{{ url_for('analisis', filter='Negatif') }}" class="text-decoration-none">
             <div class="card border-start-danger shadow h-100">
@@ -54,7 +50,6 @@
             </div>
         </a>
     </div>
-    <!-- Sentimen Netral -->
     <div class="col-xl-3 col-md-6 mb-4">
         <a href="{{ url_for('analisis', filter='Netral') }}" class="text-decoration-none">
             <div class="card border-start-secondary shadow h-100">
@@ -72,17 +67,12 @@
     </div>
 </div>
 
-<!-- Judul Dinamis untuk Chart -->
 <h3 class="mt-4 mb-3">
     Visualisasi Data 
-    {% if active_filter %}
-        <span class="badge bg-info text-dark">Filter: {{ active_filter }}</span>
-    {% else %}
-        <span class="badge bg-secondary">Semua Sentimen</span>
+    {% if active_filter %}<span class="badge bg-info text-dark">Filter: {{ active_filter }}</span>
+    {% else %}<span class="badge bg-secondary">Semua Sentimen</span>
     {% endif %}
 </h3>
-
-<!-- Baris untuk Chart -->
 <div class="row mt-2">
     <div class="col-lg-7 mb-4">
         <div class="card shadow-sm h-100">
@@ -98,12 +88,11 @@
     </div>
 </div>
 
-<!-- Baris untuk Berita Terbaru -->
 <div class="row mt-2">
     <div class="col-12">
         <div class="card shadow-sm">
             <div class="card-header">
-                <h5 class="mb-0">Berita Terbaru</h5>
+                <h5 class="mb-0">Berita Terbaru Hasil Monitoring</h5>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -142,7 +131,6 @@
     </div>
 </div>
 
-<!-- Tabel Log Data Analisis -->
 <div class="card shadow-sm mt-4">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
         <h5 class="mb-0 me-3">Log Data Analisis</h5>
@@ -152,6 +140,11 @@
             <a href="{{ url_for('analisis', filter='Negatif') }}" class="btn btn-outline-danger {% if active_filter == 'Negatif' %}active{% endif %}">Negatif</a>
             <a href="{{ url_for('analisis', filter='Netral') }}" class="btn btn-outline-secondary {% if active_filter == 'Netral' %}active{% endif %}">Netral</a>
         </div>
+        <form action="{{ url_for('promote_all_positive_route') }}" method="POST" onsubmit="return confirm('Promosikan SEMUA berita positif?');" class="ms-auto me-2">
+            <button type="submit" class="btn btn-success btn-sm">
+                <i class="bi bi-check-all"></i> Promosikan Semua Positif
+            </button>
+        </form>
         <form action="{{ url_for('reset_analisis_route') }}" method="POST" onsubmit="return confirm('Hapus semua log data analisis?');">
             <button type="submit" class="btn btn-danger btn-sm">
                 <i class="bi bi-trash"></i> Reset Log
@@ -159,58 +152,61 @@
         </form>
     </div>
     <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr class="table-primary">
-                        <th>Judul Pemberitaan</th>
-                        <th>Nama Media</th>
-                        <th>Sentimen</th>
-                        <th class="text-center">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in analysis_list %}
-                    <tr>
-                        <td>{{ item.judul_pemberitaan }}</td>
-                        <td>{{ item.nama_media }}</td>
-                        <td>
-                            {% if item.sentimen == 'Positif' %}<span class="badge bg-success">Positif</span>
-                            {% elif item.sentimen == 'Negatif' %}<span class="badge bg-danger">Negatif</span>
-                            {% else %}<span class="badge bg-secondary">Netral</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-center">
-                            <div class="btn-group" role="group">
-                                <a href="{{ item.link_pemberitaan }}" target="_blank" class="btn btn-sm btn-outline-primary" title="Kunjungi Link"><i class="bi bi-box-arrow-up-right"></i></a>
-                                <a href="{{ url_for('edit_analisis_route', analysis_id=item.id) }}" class="btn btn-sm btn-warning" title="Edit"><i class="bi bi-pencil-square"></i></a>
-                                
-                                <!-- Tombol Promosikan hanya untuk berita positif -->
-                                {% if item.sentimen == 'Positif' %}
-                                <form action="{{ url_for('promote_news_route', analysis_id=item.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Promosikan berita ini ke tabel pemberitaan resmi?');">
-                                    <button type="submit" class="btn btn-sm btn-success" title="Promosikan ke Pemberitaan"><i class="bi bi-check-circle-fill"></i></button>
-                                </form>
+        <form action="{{ url_for('promote_selected_route') }}" method="POST" id="promote-form">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr class="table-primary">
+                            <th style="width: 1%;"><input type="checkbox" id="select-all" title="Pilih Semua"></th>
+                            <th>Judul Pemberitaan</th>
+                            <th>Nama Media</th>
+                            <th>Sentimen</th>
+                            <th class="text-center">Aksi Individual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in analysis_list %}
+                        <tr>
+                            <td><input type="checkbox" name="selected_ids" value="{{ item.id }}" class="news-checkbox"></td>
+                            <td>{{ item.judul_pemberitaan }}</td>
+                            <td>{{ item.nama_media }}</td>
+                            <td>
+                                {% if item.sentimen == 'Positif' %}<span class="badge bg-success">Positif</span>
+                                {% elif item.sentimen == 'Negatif' %}<span class="badge bg-danger">Negatif</span>
+                                {% else %}<span class="badge bg-secondary">Netral</span>
                                 {% endif %}
-
-                                <form action="{{ url_for('delete_analisis_route', analysis_id=item.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus data ini?');">
-                                    <button type="submit" class="btn btn-sm btn-danger" title="Hapus"><i class="bi bi-trash-fill"></i></button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="4" class="text-center text-muted">Tidak ada data analisis untuk filter ini.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group" role="group">
+                                    <a href="{{ item.link_pemberitaan }}" target="_blank" class="btn btn-sm btn-outline-primary" title="Kunjungi Link"><i class="bi bi-box-arrow-up-right"></i></a>
+                                    <a href="{{ url_for('edit_analisis_route', analysis_id=item.id) }}" class="btn btn-sm btn-warning" title="Edit"><i class="bi bi-pencil-square"></i></a>
+                                    {% if item.sentimen == 'Positif' %}
+                                    <form action="{{ url_for('promote_news_route', analysis_id=item.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Promosikan berita ini ke tabel pemberitaan resmi?');">
+                                        <button type="submit" class="btn btn-sm btn-success" title="Promosikan ke Pemberitaan"><i class="bi bi-check-circle-fill"></i></button>
+                                    </form>
+                                    {% endif %}
+                                    <form action="{{ url_for('delete_analisis_route', analysis_id=item.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus data ini?');">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Hapus"><i class="bi bi-trash-fill"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">Tidak ada data analisis untuk filter ini.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <button type="submit" class="btn btn-primary mt-3">
+                <i class="bi bi-check-circle-fill"></i> Promosikan yang Dipilih
+            </button>
+        </form>
     </div>
 </div>
 
 <script>
-// ... (Kode JavaScript untuk chart tidak berubah)
 document.addEventListener("DOMContentLoaded", function() {
     const pieCtx = document.getElementById('sentimenChart');
     if (pieCtx) {
@@ -233,6 +229,32 @@ document.addEventListener("DOMContentLoaded", function() {
                 ]
             },
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+        });
+    }
+
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('.news-checkbox');
+    const promoteForm = document.getElementById('promote-form');
+
+    if(selectAll && checkboxes && promoteForm) {
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+            });
+        });
+
+        promoteForm.addEventListener('submit', function(e) {
+            let checkedCount = 0;
+            checkboxes.forEach(checkbox => {
+                if (checkbox.checked) checkedCount++;
+            });
+
+            if (checkedCount === 0) {
+                alert('Pilih setidaknya satu berita untuk dipromosikan.');
+                e.preventDefault();
+            } else if (!confirm('Anda yakin ingin mempromosikan ' + checkedCount + ' berita yang dipilih?')) {
+                e.preventDefault();
+            }
         });
     }
 });
