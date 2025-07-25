@@ -10,17 +10,15 @@ def get_db_connection():
     return conn
 
 def init_db():
-    """Membuat dua tabel terpisah: satu untuk pemberitaan resmi, satu untuk data analisis."""
+    """Membuat tabel-tabel yang dibutuhkan."""
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Tabel 1: Untuk data manual di halaman "Pemberitaan" (TANPA SENTIMEN)
+    # Tabel untuk pemberitaan resmi (tanpa sentimen)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS pemberitaan_resmi (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tanggal TEXT,
-            bulan TEXT,
-            tahun TEXT,
+            tanggal TEXT, bulan TEXT, tahun TEXT,
             media_pemberitaan TEXT,
             judul_pemberitaan TEXT NOT NULL,
             link_pemberitaan TEXT NOT NULL UNIQUE,
@@ -29,13 +27,11 @@ def init_db():
         );
     ''')
     
-    # Tabel 2: Untuk data otomatis dari monitoring (DENGAN SENTIMEN)
+    # Tabel untuk data analisis
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS analisis_data (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tanggal TEXT,
-            bulan TEXT,
-            tahun TEXT,
+            tanggal TEXT, bulan TEXT, tahun TEXT,
             judul_pemberitaan TEXT NOT NULL,
             link_pemberitaan TEXT NOT NULL UNIQUE,
             nama_media TEXT,
@@ -43,19 +39,23 @@ def init_db():
         );
     ''')
     
-    # Tabel untuk keywords tetap sama
+    # Tabel untuk hasil pencarian berita sementara
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS keywords (
+        CREATE TABLE IF NOT EXISTS hasil_pencarian (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            keyword TEXT NOT NULL UNIQUE
+            judul_berita TEXT NOT NULL,
+            link_pemberitaan TEXT NOT NULL UNIQUE,
+            nama_media TEXT
         );
     ''')
+    
+    # Tabel keywords tidak lagi digunakan
+    cursor.execute('DROP TABLE IF EXISTS keywords')
     
     conn.commit()
     conn.close()
 
 # --- Fungsi untuk Tabel 'pemberitaan_resmi' ---
-
 def add_pemberitaan(data):
     conn = get_db_connection()
     try:
@@ -70,42 +70,32 @@ def add_pemberitaan(data):
     finally:
         conn.close()
 
+# ... (Fungsi-fungsi lain untuk 'pemberitaan_resmi' tetap sama) ...
 def get_all_pemberitaan():
     conn = get_db_connection()
     news_list = conn.execute('SELECT * FROM pemberitaan_resmi ORDER BY id DESC').fetchall()
     conn.close()
     return news_list
-
 def get_pemberitaan_by_id(news_id):
     conn = get_db_connection()
     news_item = conn.execute('SELECT * FROM pemberitaan_resmi WHERE id = ?', (news_id,)).fetchone()
     conn.close()
     return news_item
-
 def update_pemberitaan(data):
     conn = get_db_connection()
-    conn.execute(
-        '''UPDATE pemberitaan_resmi SET 
-           judul_pemberitaan = :judul_pemberitaan, 
-           kategori_media = :kategori_media 
-           WHERE id = :id''',
-        data
-    )
+    conn.execute('''UPDATE pemberitaan_resmi SET judul_pemberitaan = :judul_pemberitaan, kategori_media = :kategori_media WHERE id = :id''', data)
     conn.commit()
     conn.close()
-
 def delete_pemberitaan_by_id(news_id):
     conn = get_db_connection()
     conn.execute('DELETE FROM pemberitaan_resmi WHERE id = ?', (news_id,))
     conn.commit()
     conn.close()
-
 def delete_all_pemberitaan():
     conn = get_db_connection()
     conn.execute('DELETE FROM pemberitaan_resmi')
     conn.commit()
     conn.close()
-
 def is_pemberitaan_url_exist(url):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -115,7 +105,6 @@ def is_pemberitaan_url_exist(url):
     return data is not None
 
 # --- Fungsi untuk Tabel 'analisis_data' ---
-
 def add_analisis_data(data):
     conn = get_db_connection()
     try:
@@ -130,8 +119,8 @@ def add_analisis_data(data):
     finally:
         conn.close()
 
+# ... (Fungsi-fungsi lain untuk 'analisis_data' tetap sama) ...
 def get_filtered_analisis_data(sentiment=None):
-    """Mengambil data analisis dengan filter sentimen."""
     conn = get_db_connection()
     if sentiment and sentiment in ['Positif', 'Negatif', 'Netral']:
         query = "SELECT * FROM analisis_data WHERE sentimen = ? ORDER BY id DESC"
@@ -141,58 +130,37 @@ def get_filtered_analisis_data(sentiment=None):
         analysis_list = conn.execute(query).fetchall()
     conn.close()
     return analysis_list
-
-# ▼▼▼ FUNGSI BARU DITAMBAHKAN ▼▼▼
 def get_all_positive_analisis_data():
-    """Mengambil semua data analisis dengan sentimen Positif."""
     conn = get_db_connection()
     query = "SELECT * FROM analisis_data WHERE sentimen = 'Positif' ORDER BY id DESC"
     positive_list = conn.execute(query).fetchall()
     conn.close()
     return positive_list
-# ▲▲▲ AKHIR FUNGSI BARU ▲▲▲
-
 def get_latest_analisis_data(limit=10):
-    """Mengambil beberapa berita terbaru dari tabel analisis."""
     conn = get_db_connection()
     latest_analysis = conn.execute('SELECT * FROM analisis_data ORDER BY id DESC LIMIT ?', (limit,)).fetchall()
     conn.close()
     return latest_analysis
-
 def get_analisis_data_by_id(analysis_id):
-    """Mengambil satu data analisis berdasarkan ID."""
     conn = get_db_connection()
     item = conn.execute('SELECT * FROM analisis_data WHERE id = ?', (analysis_id,)).fetchone()
     conn.close()
     return item
-
 def update_analisis_data(data):
-    """Memperbarui data di tabel analisis_data."""
     conn = get_db_connection()
-    conn.execute(
-        '''UPDATE analisis_data SET 
-           judul_pemberitaan = :judul_pemberitaan, 
-           sentimen = :sentimen 
-           WHERE id = :id''',
-        data
-    )
+    conn.execute('''UPDATE analisis_data SET judul_pemberitaan = :judul_pemberitaan, sentimen = :sentimen WHERE id = :id''', data)
     conn.commit()
     conn.close()
-
 def delete_analisis_data_by_id(analysis_id):
-    """Menghapus satu data dari tabel analisis_data."""
     conn = get_db_connection()
     conn.execute('DELETE FROM analisis_data WHERE id = ?', (analysis_id,))
     conn.commit()
     conn.close()
-
 def delete_all_analisis_data():
-    """Menghapus semua data dari tabel analisis_data."""
     conn = get_db_connection()
     conn.execute('DELETE FROM analisis_data')
     conn.commit()
     conn.close()
-    
 def is_analisis_url_exist(url):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -201,25 +169,40 @@ def is_analisis_url_exist(url):
     conn.close()
     return data is not None
 
-# --- Fungsi untuk Tabel 'keywords' ---
-def add_keyword(keyword):
+# --- BARU: Fungsi untuk Tabel 'hasil_pencarian' ---
+def add_hasil_pencarian(data):
+    """Menambahkan satu hasil pencarian ke tabel sementara."""
     conn = get_db_connection()
     try:
-        conn.execute('INSERT INTO keywords (keyword) VALUES (?)', (keyword,))
+        conn.execute(
+            'INSERT INTO hasil_pencarian (judul_berita, link_pemberitaan, nama_media) VALUES (?, ?, ?)',
+            (data['judul_pemberitaan'], data['link_pemberitaan'], data['nama_media'])
+        )
         conn.commit()
     except sqlite3.IntegrityError:
-        print(f"Keyword '{keyword}' sudah ada.")
+        pass # Abaikan jika link sudah ada
+    except Exception as e:
+        print(f"Error saat menambahkan hasil pencarian: {e}")
     finally:
         conn.close()
 
-def get_all_keywords():
+def get_all_hasil_pencarian():
+    """Mengambil semua hasil pencarian dari tabel sementara."""
     conn = get_db_connection()
-    keywords = conn.execute('SELECT * FROM keywords ORDER BY keyword ASC').fetchall()
+    hasil = conn.execute('SELECT * FROM hasil_pencarian ORDER BY id DESC').fetchall()
     conn.close()
-    return keywords
+    return hasil
 
-def delete_keyword(keyword_id):
+def clear_hasil_pencarian():
+    """Menghapus semua hasil pencarian dari tabel sementara."""
     conn = get_db_connection()
-    conn.execute('DELETE FROM keywords WHERE id = ?', (keyword_id,))
+    conn.execute('DELETE FROM hasil_pencarian')
     conn.commit()
     conn.close()
+
+def get_pencarian_by_link(link):
+    """Mengambil satu item dari hasil pencarian berdasarkan link."""
+    conn = get_db_connection()
+    item = conn.execute('SELECT * FROM hasil_pencarian WHERE link_pemberitaan = ?', (link,)).fetchone()
+    conn.close()
+    return item

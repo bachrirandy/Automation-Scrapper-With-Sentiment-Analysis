@@ -10,7 +10,6 @@
 </head>
 <body>
 
-<!-- Sidebar (Offcanvas) -->
 <div class="offcanvas offcanvas-start text-bg-dark" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
     <div class="offcanvas-header">
         <a href="{{ url_for('home') }}" class="d-flex align-items-center text-white text-decoration-none">
@@ -20,7 +19,6 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body d-flex flex-column">
-        <!-- Menu Navigasi -->
         <ul class="nav nav-pills flex-column mb-auto">
             <li class="nav-item">
                 <a href="{{ url_for('home') }}" class="nav-link {% if request.path == url_for('home') %}active{% else %}text-white{% endif %}">
@@ -28,7 +26,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ url_for('analisis') }}" class="nav-link {% if request.path == url_for('analisis') %}active{% else %}text-white{% endif %}">
+                <a href="{{ url_for('analisis') }}" class="nav-link {% if 'analisis' in request.path %}active{% else %}text-white{% endif %}">
                     <i class="bi bi-pie-chart-fill me-2"></i> Dashboard Analisis
                 </a>
             </li>
@@ -38,8 +36,8 @@
                 </a>
             </li>
             <li>
-                <a href="{{ url_for('monitoring_route') }}" class="nav-link {% if 'monitoring' in request.path %}active{% else %}text-white{% endif %}">
-                    <i class="bi bi-google me-2"></i> Monitoring
+                <a href="{{ url_for('halaman_pencarian') }}" class="nav-link {% if 'cari-berita' in request.path %}active{% else %}text-white{% endif %}">
+                    <i class="bi bi-search me-2"></i> Cari Berita
                 </a>
             </li>
             <li>
@@ -49,7 +47,6 @@
             </li>
         </ul>
         <hr>
-        <!-- Dropdown User -->
         <div class="dropdown">
             <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                 <img src="https://github.com/mdo.png" alt="" width="32" height="32" class="rounded-circle me-2">
@@ -65,9 +62,7 @@
     </div>
 </div>
 
-<!-- Konten Utama Halaman -->
 <div class="main-content">
-    <!-- Navbar Atas -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom sticky-top">
         <div class="container-fluid">
             <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu">
@@ -79,7 +74,6 @@
         </div>
     </nav>
 
-    <!-- Konten Halaman -->
     <div class="container-fluid p-4">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -98,5 +92,33 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Menangani semua form dengan class 'form-confirm' untuk tombol hapus/reset
+    const confirmForms = document.querySelectorAll('.form-confirm');
+    confirmForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault(); // Mencegah form dikirim langsung
+            const message = form.getAttribute('data-message') || 'Apakah Anda yakin?';
+            
+            Swal.fire({
+                title: 'Konfirmasi',
+                text: message,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Lanjutkan!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit(); // Jika dikonfirmasi, kirim form
+                }
+            });
+        });
+    });
+});
+</script>
 </body>
 </html>

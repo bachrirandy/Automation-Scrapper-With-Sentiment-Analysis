@@ -156,12 +156,13 @@
             <a href="{{ url_for('analisis', filter='Negatif') }}" class="btn btn-outline-danger {% if active_filter == 'Negatif' %}active{% endif %}">Negatif</a>
             <a href="{{ url_for('analisis', filter='Netral') }}" class="btn btn-outline-secondary {% if active_filter == 'Netral' %}active{% endif %}">Netral</a>
         </div>
-        <form action="{{ url_for('promote_all_positive_route') }}" method="POST" onsubmit="return confirm('Promosikan SEMUA berita positif?');" class="ms-auto me-2">
+        
+        <form action="{{ url_for('promote_all_positive_route') }}" method="POST" class="form-confirm ms-auto me-2" data-message="Anda yakin ingin mempromosikan SEMUA berita positif?">
             <button type="submit" class="btn btn-success btn-sm">
                 <i class="bi bi-check-all"></i> Promosikan Semua Positif
             </button>
         </form>
-        <form action="{{ url_for('reset_analisis_route') }}" method="POST" onsubmit="return confirm('Hapus semua log data analisis?');">
+        <form action="{{ url_for('reset_analisis_route') }}" method="POST" class="form-confirm" data-message="Anda yakin ingin menghapus semua log data analisis?">
             <button type="submit" class="btn btn-danger btn-sm">
                 <i class="bi bi-trash"></i> Reset Log
             </button>
@@ -196,12 +197,12 @@
                                 <div class="btn-group" role="group">
                                     <a href="{{ item.link_pemberitaan }}" target="_blank" class="btn btn-sm btn-outline-primary" title="Kunjungi Link"><i class="bi bi-box-arrow-up-right"></i></a>
                                     <a href="{{ url_for('edit_analisis_route', analysis_id=item.id) }}" class="btn btn-sm btn-warning" title="Edit"><i class="bi bi-pencil-square"></i></a>
-                                    {% if item.sentimen == 'Positif' %}
-                                    <form action="{{ url_for('promote_news_route', analysis_id=item.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Promosikan berita ini ke tabel pemberitaan resmi?');">
-                                        <button type="submit" class="btn btn-sm btn-success" title="Promosikan ke Pemberitaan"><i class="bi bi-check-circle-fill"></i></button>
+                                    
+                                    <form action="{{ url_for('promote_news_route', analysis_id=item.id) }}" method="POST" class="d-inline form-confirm" data-message="Anda yakin ingin mempromosikan berita ini?">
+                                        <button type="submit" class="btn btn-sm btn-success" title="Promosikan"><i class="bi bi-check-circle-fill"></i></button>
                                     </form>
-                                    {% endif %}
-                                    <form action="{{ url_for('delete_analisis_route', analysis_id=item.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus data ini?');">
+                                    
+                                    <form action="{{ url_for('delete_analisis_route', analysis_id=item.id) }}" method="POST" class="d-inline form-confirm" data-message="Anda yakin ingin menghapus data ini?">
                                         <button type="submit" class="btn btn-sm btn-danger" title="Hapus"><i class="bi bi-trash-fill"></i></button>
                                     </form>
                                 </div>
@@ -260,16 +261,31 @@ document.addEventListener("DOMContentLoaded", function() {
         });
 
         promoteForm.addEventListener('submit', function(e) {
+            e.preventDefault(); 
             let checkedCount = 0;
             checkboxes.forEach(checkbox => {
                 if (checkbox.checked) checkedCount++;
             });
 
             if (checkedCount === 0) {
-                alert('Pilih setidaknya satu berita untuk dipromosikan.');
-                e.preventDefault();
-            } else if (!confirm('Anda yakin ingin mempromosikan ' + checkedCount + ' berita yang dipilih?')) {
-                e.preventDefault();
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Belum Ada Berita Dipilih',
+                    text: 'Anda perlu memilih setidaknya satu berita untuk dipromosikan.',
+                });
+            } else {
+                Swal.fire({
+                    title: 'Konfirmasi',
+                    text: 'Anda yakin ingin mempromosikan ' + checkedCount + ' berita yang dipilih?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, Lanjutkan!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        promoteForm.submit(); 
+                    }
+                });
             }
         });
     }
