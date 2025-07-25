@@ -1,31 +1,74 @@
 # pln-news-monitor/utils/sentiment.py
 
-from pysentimiento import create_analyzer
+import pickle
+import re
+from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
+from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
 
-# Inisialisasi analyzer. Model akan diunduh otomatis saat pertama kali dijalankan.
+# --- Inisialisasi dan Muat Model ---
+model = None
+vectorizer = None
 try:
-    sentiment_analyzer = create_analyzer(task="sentiment", lang="id")
+    # Sesuaikan path jika file .pkl berada di direktori yang berbeda.
+    # Jika Anda menjalankan flask run dari root proyek, maka path ini sudah benar.
+    with open('utils/sentiment_model.pkl', 'rb') as model_file:
+        model = pickle.load(model_file)
+    with open('utils/tfidf_vectorizer.pkl', 'rb') as vec_file:
+        vectorizer = pickle.load(vec_file)
+    print("Model sentimen berhasil dimuat.")
+except FileNotFoundError:
+    print("Peringatan: File model atau vectorizer tidak ditemukan. Pastikan sudah melatih dan menyimpannya di folder 'utils'.")
 except Exception as e:
-    print(f"Gagal memuat model sentimen: {e}")
-    sentiment_analyzer = None
+    print(f"Error saat memuat model sentimen: {e}")
 
-def analyze_title_sentiment(title):
-    """
-    Menganalisis sentimen teks dan mengembalikan tonalitas.
-    """
-    if not sentiment_analyzer or not title:
+# --- Fungsi Preprocessing Teks (harus sama seperti saat pelatihan) ---
+def preprocess_text(text):
+    if not isinstance(text, str): 
+        return "" 
+    text = text.lower()
+    text = re.sub(r'[^a-zA-Z\s]', '', text)
+    tokens = word_tokenize(text)
+
+    list_stopwords_sastrawi = StopWordRemoverFactory().get_stop_words()
+    list_stopwords_nltk = stopwords.words('indonesian')
+    custom_stopwords = ['padam', 'listrik'] # tambahkan kata-kata kustom di sini
+    all_stopwords = set(list_stopwords_sastrawi + list_stopwords_nltk + custom_stopwords)
+
+    tokens = [word for word in tokens if word not in all_stopwords]
+
+    factory = StemmerFactory()
+    stemmer = factory.create_stemmer()
+    tokens = [stemmer.stem(word) for word in tokens]
+    return " ".join(tokens)
+
+# --- Fungsi Utama untuk Analisis Sentimen ---
+def analyze_title_sentiment(text):
+    if model is None or vectorizer is None:
+        print("Model sentimen tidak tersedia. Mengembalikan sentimen 'Netral'.")
+        return "Netral"  
+
+    clean_text = preprocess_text(text)
+
+    if not clean_text.strip(): # Cek jika teks kosong setelah preprocessing
         return "Netral"
-        
+
     try:
-        result = sentiment_analyzer.predict(title)
-        output = result.output
-        if output == 'POS':
-            return 'Positif'
-        elif output == 'NEG':
-            return 'Negatif'
-        else: # NEU
-            return 'Netral'
-            
+        text_vector = vectorizer.transform([clean_text])
+        prediction_label = model.predict(text_vector)[0]
+
+        # Mapping kembali dari label numerik ke string sentimen
+        # Asumsi: 0=negatif, 1=netral, 2=positif berdasarkan LabelEncoder Anda
+        if prediction_label == 0:
+            return "Negatif"
+        elif prediction_label == 1:
+            return "Netral"
+        elif prediction_label == 2:
+            return "Positif"
+        else:
+            return "Netral" 
+
     except Exception as e:
-        print(f"Error menganalisis sentimen: {e}")
+        print(f"Error saat memprediksi sentimen: {e}")
         return "Netral"
