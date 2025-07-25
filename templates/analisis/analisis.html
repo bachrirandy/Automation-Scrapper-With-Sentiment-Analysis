@@ -4,6 +4,21 @@
 {% block title %}Dashboard Analisis{% endblock %}
 
 {% block content %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-search"></i> Analisis Cepat & Simpan</h5>
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('cek_sentimen_manual') }}" method="POST">
+            <div class="mb-3">
+                <label for="user_input" class="form-label">Masukkan Judul Berita atau Link:</label>
+                <textarea class="form-control" id="user_input" name="user_input" rows="3" required placeholder="Ketik judul berita di sini...&#10;...atau tempelkan link berita di sini."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Analisis & Simpan ke Log</button>
+        </form>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-xl-3 col-md-6 mb-4">
         <a href="{{ url_for('analisis') }}" class="text-decoration-none">
@@ -66,6 +81,7 @@
         </a>
     </div>
 </div>
+
 
 <h3 class="mt-4 mb-3">
     Visualisasi Data 

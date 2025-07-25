@@ -88,6 +88,49 @@ def analisis():
         latest_news=database.get_latest_analisis_data(5)
     )
 
+@app.route('/analisis/cek_manual', methods=['POST'])
+def cek_sentimen_manual():
+    user_input = request.form.get('user_input')
+    if not user_input:
+        flash('Input tidak boleh kosong.', 'warning')
+        return redirect(url_for('analisis'))
+
+    news_data = {}
+    judul_untuk_dianalisis = ""
+
+    if user_input.strip().startswith(('http://', 'https://')):
+        link = user_input.strip()
+        if database.is_analisis_url_exist(link) or database.is_pemberitaan_url_exist(link):
+            flash('Berita dari link ini sudah ada di dalam database.', 'warning')
+            return redirect(url_for('analisis'))
+        
+        scraped_data = scraper.scrape_news_data(link)
+        if scraped_data:
+            news_data = scraped_data
+            judul_untuk_dianalisis = news_data.get('judul_pemberitaan')
+        else:
+            flash('Gagal mengambil data dari link yang diberikan.', 'danger')
+            return redirect(url_for('analisis'))
+    else:
+        judul_untuk_dianalisis = user_input
+        news_data = {
+            "tanggal": datetime.now().day,
+            "bulan": datetime.now().month,
+            "tahun": datetime.now().year,
+            "judul_pemberitaan": judul_untuk_dianalisis,
+            "link_pemberitaan": f"manual_input_{datetime.now().timestamp()}",
+            "nama_media": "Input Manual",
+        }
+
+    hasil_sentimen = sentiment.analyze_title_sentiment(judul_untuk_dianalisis)
+    news_data['sentimen'] = hasil_sentimen
+
+    database.add_analisis_data(news_data)
+    flash(f"Judul berhasil dianalisis dan disimpan dengan sentimen: {hasil_sentimen}", "success")
+    
+    return redirect(url_for('analisis'))
+
+
 @app.route('/analisis/edit/<int:analysis_id>', methods=['GET', 'POST'])
 def edit_analisis_route(analysis_id):
     item = database.get_analisis_data_by_id(analysis_id)
@@ -130,7 +173,6 @@ def promote_news_route(analysis_id):
     flash(f"Berita '{item_to_promote['judul_pemberitaan']}' berhasil dipromosikan.", 'success')
     return redirect(url_for('analisis'))
 
-# ▼▼▼ RUTE BARU DITAMBAHKAN DI SINI ▼▼▼
 @app.route('/analisis/promote_all_positive', methods=['POST'])
 def promote_all_positive_route():
     positive_items = database.get_all_positive_analisis_data()
@@ -169,7 +211,6 @@ def promote_selected_route():
                 skipped_count += 1
     flash(f'Berhasil mempromosikan {promoted_count} berita. {skipped_count} berita dilewati karena sudah ada.', 'success')
     return redirect(url_for('analisis'))
-# ▲▲▲ AKHIR DARI RUTE BARU ▲▲▲
 
 @app.route('/pemberitaan')
 def pemberitaan():
