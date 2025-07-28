@@ -19,6 +19,7 @@ Thumbs.db
 # File data
 *.csv
 *.xlsx
+database.db
 
 # File konfigurasi pribadi
 .env

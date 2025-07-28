@@ -20,6 +20,6 @@ nltk==3.8.1
 
 # New Scraping Libraries
 selenium==4.22.0
-webdriver-manager==4.0.1
+webdriver-manager
 beautifulsoup4==4.12.3
 requests==2.32.3
