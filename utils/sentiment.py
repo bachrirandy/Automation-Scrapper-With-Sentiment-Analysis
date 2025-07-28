@@ -33,23 +33,24 @@ except Exception as e:
 # --- Fungsi Pra-pemrosesan Teks (Harus sama persis dengan saat pelatihan) ---
 def preprocess_text(text):
     if not isinstance(text, str):
-        return ""
-    text = text.lower()
-    text = re.sub(r'[^a-zA-Z\s]', '', text)
-    tokens = word_tokenize(text)
+        return "" # Pastikan input adalah string
+    text = text.lower() # Case Folding
+    text = re.sub(r'[^a-zA-Z\s]', '', text) # Hapus karakter non-alfabet dan spasi
+    tokens = word_tokenize(text) # Tokenisasi
 
     stop_factory = StopWordRemoverFactory()
     list_stopwords_sastrawi = stop_factory.get_stop_words()
     list_stopwords_nltk = stopwords.words('indonesian')
-    # === PENTING: Gunakan stopword kustom yang sama persis dengan saat pelatihan ===
-    custom_stopwords = ['padam', 'listrik', 'pln', 's2jb', 'uid', 'ganggu', 'layanan', 'warga', 'karena', 'akibat']
+    # === PENTING: Tambahkan stopword kustom di sini untuk mengatasi "padam" dll. ===
+    custom_stopwords = ['pln', 's2jb', 'uid', 'karena', 'akibat', 'sehingga', 'yakni', 'yaitu', 'terhadap', 'adalah', 'merupakan'] # Contoh, tambahkan yang benar-benar netral saja
     all_stopwords = set(list_stopwords_sastrawi + list_stopwords_nltk + custom_stopwords)
     tokens = [word for word in tokens if word not in all_stopwords]
 
+    # Stemming
     stem_factory = StemmerFactory()
     stemmer = stem_factory.create_stemmer()
     tokens = [stemmer.stem(word) for word in tokens]
-    return " ".join(tokens)
+    return " ".join(tokens) # Gabungkan kembali token menjadi string
 
 # --- Fungsi Utama untuk Analisis Sentimen ---
 def analyze_title_sentiment(text):
