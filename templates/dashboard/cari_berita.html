@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block page_title %}Cari Berita Online{% endblock %}
+
+{% block title %}Cari Berita Online{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-search"></i> Cari Berita Berdasarkan Keyword</h5>
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('run_pencarian_berita') }}" method="POST" id="search-form">
+            <div class="mb-3">
+                <label for="keyword" class="form-label">Masukkan kata kunci (contoh: "PLN UID S2JB")</label>
+                <input type="text" name="keyword" id="keyword" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100" id="search-btn">
+                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                <span class="button-text">Cari Berita Sekarang</span>
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h5 class="mb-0">Hasil Pencarian</h5>
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('analisis_berita_terpilih') }}" method="POST">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="select-all"></th>
+                            <th>Judul Berita</th>
+                            <th>Media</th>
+                            <th>Link</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in hasil_pencarian %}
+                        <tr>
+                            <td><input type="checkbox" name="selected_links" value="{{ item.link_pemberitaan }}" class="news-checkbox"></td>
+                            <td>{{ item.judul_berita }}</td>
+                            <td>{{ item.nama_media }}</td>
+                            <td><a href="{{ item.link_pemberitaan }}" target="_blank">Kunjungi</a></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-center text-muted">Belum ada hasil pencarian.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if hasil_pencarian %}
+            <button type="submit" class="btn btn-success mt-3">
+                <i class="bi bi-graph-up"></i> Analisis Berita yang Dipilih
+            </button>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // JavaScript untuk loading button
+    const searchForm = document.getElementById('search-form');
+    if (searchForm) {
+        searchForm.addEventListener('submit', function() {
+            const button = document.getElementById('search-btn');
+            const spinner = button.querySelector('.spinner-border');
+            const buttonText = button.querySelector('.button-text');
+            button.disabled = true;
+            spinner.classList.remove('d-none');
+            buttonText.textContent = ' Sedang Mencari...';
+        });
+    }
+
+    // JavaScript untuk checkbox
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('.news-checkbox');
+    if(selectAll && checkboxes) {
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+            });
+        });
+    }
+});
+</script>
+
+{% endblock %}

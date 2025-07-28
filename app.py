@@ -1,22 +1,21 @@
-import atexit
 import io
 import pandas as pd
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file
-from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
+import feedparser
+from urllib.parse import quote, urlparse
+import time
+
+# Selenium untuk menangani redirect link Google News
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
 
 from config import Config
 from utils import database, scraper, sentiment
-from scheduler.monitor import run_monitoring
 
 app = Flask(__name__)
 app.config.from_object(Config)
-
-# --- SCHEDULER SETUP ---
-scheduler = BackgroundScheduler(daemon=True)
-scheduler.add_job(run_monitoring, 'interval', minutes=60, id='monitoring_job')
-scheduler.start()
-atexit.register(lambda: scheduler.shutdown())
 
 # Inisialisasi database
 with app.app_context():
@@ -26,10 +25,13 @@ with app.app_context():
 
 @app.route('/')
 def home():
+    """Rute untuk halaman selamat datang."""
     return render_template('dashboard/home.html')
 
+# --- Rute untuk Dashboard Analisis ---
 @app.route('/analisis')
 def analisis():
+    """Rute untuk dasbor statistik sentimen."""
     sentiment_filter = request.args.get('filter', None)
     
     conn = database.get_db_connection()
@@ -78,14 +80,17 @@ def analisis():
                     trend_positif = sentiment_trend['Positif'].tolist()
                     trend_negatif = sentiment_trend['Negatif'].tolist()
                     trend_netral = sentiment_trend['Netral'].tolist()
-
+    
     return render_template(
         'analisis/analisis.html',
         total_berita=total_berita, positif_count=positif_count, negatif_count=negatif_count, netral_count=netral_count,
         sentimen_labels=sentimen_labels, sentimen_data=sentimen_data, sentimen_colors=sentimen_colors,
         analysis_list=analysis_list, active_filter=sentiment_filter,
-        trend_labels=trend_labels, trend_positif_data=trend_positif, trend_negatif_data=trend_negatif, trend_netral_data=trend_netral,
-        latest_news=database.get_latest_analisis_data(5)
+        latest_news=database.get_latest_analisis_data(5),
+        trend_labels=trend_labels,
+        trend_positif_data=trend_positif,
+        trend_negatif_data=trend_negatif,
+        trend_netral_data=trend_netral
     )
 
 @app.route('/analisis/cek_manual', methods=['POST'])
@@ -129,7 +134,6 @@ def cek_sentimen_manual():
     flash(f"Judul berhasil dianalisis dan disimpan dengan sentimen: {hasil_sentimen}", "success")
     
     return redirect(url_for('analisis'))
-
 
 @app.route('/analisis/edit/<int:analysis_id>', methods=['GET', 'POST'])
 def edit_analisis_route(analysis_id):
@@ -176,8 +180,7 @@ def promote_news_route(analysis_id):
 @app.route('/analisis/promote_all_positive', methods=['POST'])
 def promote_all_positive_route():
     positive_items = database.get_all_positive_analisis_data()
-    promoted_count = 0
-    skipped_count = 0
+    promoted_count, skipped_count = 0, 0
     for item in positive_items:
         if not database.is_pemberitaan_url_exist(item['link_pemberitaan']):
             news_data = dict(item)
@@ -196,8 +199,7 @@ def promote_selected_route():
     if not selected_ids:
         flash('Tidak ada berita yang dipilih.', 'warning')
         return redirect(url_for('analisis'))
-    promoted_count = 0
-    skipped_count = 0
+    promoted_count, skipped_count = 0, 0
     for item_id in selected_ids:
         item = database.get_analisis_data_by_id(item_id)
         if item:
@@ -212,6 +214,7 @@ def promote_selected_route():
     flash(f'Berhasil mempromosikan {promoted_count} berita. {skipped_count} berita dilewati karena sudah ada.', 'success')
     return redirect(url_for('analisis'))
 
+# --- Rute untuk Data Pemberitaan ---
 @app.route('/pemberitaan')
 def pemberitaan():
     news_list = database.get_all_pemberitaan()
@@ -282,54 +285,110 @@ def download_excel():
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='Pemberitaan')
     output.seek(0)
-    return send_file(output, as_attachment=True, download_name='laporan_pemberitaan.xlsx', mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    return send_file(output, as_attachment=True, download_name='laporan_pemberitaan.xlsx')
 
-@app.route('/monitoring')
-def monitoring_route():
-    keywords = database.get_all_keywords()
-    latest_analysis = database.get_latest_analisis_data(limit=10)
-    job = scheduler.get_job('monitoring_job')
-    is_running = job is not None and job.next_run_time is not None
-    return render_template('dashboard/monitoring.html', keywords=keywords, latest_analysis=latest_analysis, is_running=is_running)
+# --- Rute untuk Fitur Cari Berita ---
+@app.route('/cari-berita', methods=['GET'])
+def halaman_pencarian():
+    """Menampilkan halaman pencarian dan hasilnya."""
+    hasil = database.get_all_hasil_pencarian()
+    return render_template('dashboard/cari_berita.html', hasil_pencarian=hasil)
 
-@app.route('/monitoring/add', methods=['POST'])
-def add_keyword_route():
+@app.route('/cari-berita/run', methods=['POST'])
+def run_pencarian_berita():
+    """Menjalankan proses pencarian berdasarkan keyword."""
     keyword = request.form.get('keyword')
-    if keyword:
-        database.add_keyword(keyword.strip())
-        flash(f"Keyword '{keyword}' berhasil ditambahkan.", "success")
-    else:
-        flash("Keyword tidak boleh kosong.", "danger")
-    return redirect(url_for('monitoring_route'))
+    if not keyword:
+        flash('Keyword pencarian tidak boleh kosong.', 'warning')
+        return redirect(url_for('halaman_pencarian'))
 
-@app.route('/monitoring/delete/<int:keyword_id>', methods=['POST'])
-def delete_keyword_route(keyword_id):
-    database.delete_keyword(keyword_id)
-    flash("Keyword berhasil dihapus.", "success")
-    return redirect(url_for('monitoring_route'))
+    database.clear_hasil_pencarian()
 
-@app.route('/monitoring/run', methods=['POST'])
-def run_monitoring_now():
+    search_term = quote(keyword)
+    source_url = f"https://news.google.com/rss/search?q={search_term}&hl=id&gl=ID&ceid=ID:id"
+    feed = feedparser.parse(source_url)
+    
+    found_count = 0
+    
+    # Setup Selenium options
+    options = webdriver.ChromeOptions()
+    options.add_argument('--headless')
+    options.add_argument('--disable-gpu')
+    options.add_argument('--log-level=3')
+    options.add_experimental_option('excludeSwitches', ['enable-logging'])
+    driver = None
+
     try:
-        run_monitoring()
-        flash("Pemantauan manual berhasil dijalankan. Cek halaman 'Dashboard Analisis' untuk hasilnya.", "info")
-    except Exception as e:
-        flash(f"Terjadi error saat menjalankan pemantauan: {e}", "danger")
-    return redirect(url_for('monitoring_route'))
+        # Initialize WebDriver
+        service = ChromeService(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=options)
+        
+        for entry in feed.entries:
+            try:
+                google_link = entry.link
+                
+                # Use Selenium to get the final URL
+                driver.get(google_link)
+                time.sleep(0.5) 
+                real_link = driver.current_url
 
-@app.route('/monitoring/toggle', methods=['POST'])
-def toggle_scheduler_route():
-    job = scheduler.get_job('monitoring_job')
-    if job and job.next_run_time:
-        scheduler.pause_job('monitoring_job')
-        flash("Scheduler pemantauan otomatis telah dihentikan.", "warning")
-    elif job:
-        scheduler.resume_job('monitoring_job')
-        flash("Scheduler pemantauan otomatis telah dijalankan kembali.", "success")
-    else:
-        scheduler.add_job(run_monitoring, 'interval', minutes=60, id='monitoring_job')
-        flash("Scheduler baru telah dibuat dan dijalankan.", "success")
-    return redirect(url_for('monitoring_route'))
+                # Fallback check: if it's still a google link, skip it
+                if "news.google.com" in urlparse(real_link).netloc:
+                    continue
+
+                news_item = {
+                    'judul_pemberitaan': entry.title,
+                    'link_pemberitaan': real_link,
+                    'nama_media': urlparse(real_link).netloc.replace('www.', '')
+                }
+                database.add_hasil_pencarian(news_item)
+                found_count += 1
+            except Exception as e:
+                print(f"Gagal memproses link: {entry.link}. Error: {e}")
+                continue
+    finally:
+        if driver:
+            driver.quit()
+    
+    flash(f"{found_count} berita ditemukan untuk keyword '{keyword}'.", "success")
+    return redirect(url_for('halaman_pencarian'))
+
+@app.route('/analisis/terpilih', methods=['POST'])
+def analisis_berita_terpilih():
+    """Mengambil berita terpilih dari hasil pencarian untuk dianalisis."""
+    selected_links = request.form.getlist('selected_links')
+    if not selected_links:
+        flash("Tidak ada berita yang dipilih untuk dianalisis.", "warning")
+        return redirect(url_for('halaman_pencarian'))
+
+    analyzed_count = 0
+    skipped_count = 0
+    for link in selected_links:
+        if database.is_analisis_url_exist(link) or database.is_pemberitaan_url_exist(link):
+            skipped_count += 1
+            continue
+        
+        item_pencarian = database.get_pencarian_by_link(link)
+        if not item_pencarian:
+            continue
+
+        news_data = {
+            "tanggal": datetime.now().day,
+            "bulan": datetime.now().month,
+            "tahun": datetime.now().year,
+            "judul_pemberitaan": item_pencarian['judul_berita'],
+            "link_pemberitaan": item_pencarian['link_pemberitaan'],
+            "nama_media": item_pencarian['nama_media'],
+        }
+        
+        hasil_sentimen = sentiment.analyze_title_sentiment(news_data['judul_pemberitaan'])
+        news_data['sentimen'] = hasil_sentimen
+        
+        database.add_analisis_data(news_data)
+        analyzed_count += 1
+    
+    flash(f"{analyzed_count} berita berhasil dianalisis dan disimpan. {skipped_count} berita dilewati karena sudah ada.", "success")
+    return redirect(url_for('analisis'))
 
 if __name__ == '__main__':
     app.run(debug=True)
