@@ -1,4 +1,3 @@
-<!-- pln-news-monitor/templates/edit.html -->
 {% extends 'base.html' %}
 
 {% block title %}Edit Berita{% endblock %}
@@ -13,22 +12,58 @@
             <div class="card-body">
                 <form method="POST">
                     <div class="mb-3">
-                        <label for="judul_pemberitaan" class="form-label">Judul Pemberitaan</label>
+                        <label for="judul_pemberitaan" class="form-label fw-bold">Judul Pemberitaan</label>
                         <textarea class="form-control" id="judul_pemberitaan" name="judul_pemberitaan" rows="3" required>{{ news.judul_pemberitaan }}</textarea>
                     </div>
+
                     <div class="mb-3">
-                        <label for="link_pemberitaan" class="form-label">Link Pemberitaan</label>
+                        <label for="link_pemberitaan" class="form-label fw-bold">Link Pemberitaan</label>
                         <input type="text" class="form-control" id="link_pemberitaan" value="{{ news.link_pemberitaan }}" disabled readonly>
                         <div class="form-text">Link tidak dapat diubah.</div>
                     </div>
+
                     <div class="mb-3">
-                        <label for="kategori_media" class="form-label">Kategori Media</label>
-                        <select class="form-select" id="kategori_media" name="kategori_media" required>
-                            <option value="Nasional" {% if news.kategori_media == 'Nasional' %}selected{% endif %}>Nasional</option>
-                            <option value="Lokal" {% if news.kategori_media == 'Lokal' %}selected{% endif %}>Lokal</option>
-                            <option value="Internasional" {% if news.kategori_media == 'Internasional' %}selected{% endif %}>Internasional</option>
+                        <label for="nama_media" class="form-label fw-bold">Nama Media</label>
+                        <input type="text" class="form-control" id="nama_media" name="nama_media" value="{{ news.nama_media }}" required>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="tanggal" class="form-label fw-bold">Tanggal</label>
+                            <input type="number" class="form-control" id="tanggal" name="tanggal" value="{{ news.tanggal }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="bulan" class="form-label fw-bold">Bulan</label>
+                            <input type="number" class="form-control" id="bulan" name="bulan" value="{{ news.bulan }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="tahun" class="form-label fw-bold">Tahun</label>
+                            <input type="number" class="form-control" id="tahun" name="tahun" value="{{ news.tahun }}" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="media_pemberitaan" class="form-label fw-bold">Media Pemberitaan</label>
+                        <select class="form-select" id="media_pemberitaan" name="media_pemberitaan" required>
+                            <option value="Media Online" {% if news.media_pemberitaan == 'Media Online' %}selected{% endif %}>Media Online</option>
+                            <option value="Media Cetak" {% if news.media_pemberitaan == 'Media Cetak' %}selected{% endif %}>Media Cetak</option>
+                            <option value="Media Elektronik" {% if news.media_pemberitaan == 'Media Elektronik' %}selected{% endif %}>Media Elektronik</option>
                         </select>
                     </div>
+
+                    <div class="mb-3">
+                        <label for="kategori_media" class="form-label fw-bold">Kategori Media</label>
+                        <select class="form-select" id="kategori_media" name="kategori_media" required>
+                            <option value="Media Online - Local & Lainnya Media Online" {% if news.kategori_media == 'Media Online - Local & Lainnya Media Online' %}selected{% endif %}>Media Online - Local & Lainnya Media Online</option>
+                            <option value="TV - Local & Lainnya TV" {% if news.kategori_media == 'TV - Local & Lainnya TV' %}selected{% endif %}>TV - Local & Lainnya TV</option>
+                            <option value="Media Elektronik - Iklan TV" {% if news.kategori_media == 'Media Elektronik - Iklan TV' %}selected{% endif %}>Media Elektronik - Iklan TV</option>
+                            <option value="Media Elektronik - RUNNING TEXT TV LOKAL" {% if news.kategori_media == 'Media Elektronik - RUNNING TEXT TV LOKAL' %}selected{% endif %}>Media Elektronik - RUNNING TEXT TV LOKAL</option>
+                            <option value="Radio - Local & Lainnya Radio" {% if news.kategori_media == 'Radio - Local & Lainnya Radio' %}selected{% endif %}>Radio - Local & Lainnya Radio</option>
+                            <option value="Media Cetak - Local & Lainnya Media Cetak" {% if news.kategori_media == 'Media Cetak - Local & Lainnya Media Cetak' %}selected{% endif %}>Media Cetak - Local & Lainnya Media Cetak</option>
+                            <option value="Belum Dikategorikan" {% if news.kategori_media == 'Belum Dikategorikan' %}selected{% endif %}>Belum Dikategorikan</option>
+                        </select>
+                    </div>
+
                     <div class="d-flex justify-content-end">
                         <a href="{{ url_for('pemberitaan') }}" class="btn btn-secondary me-2">Batal</a>
                         <button type="submit" class="btn btn-primary">Simpan Perubahan</button>

@@ -1,38 +1,23 @@
-# Nama File: app.py
-# Lokasi: C:\HIKMAH MAHARANI\KERJA PRAKTIK\NLP PROJECT\Automation-Scrapper-With-Sentiment-Analysis\app.py
-
-import atexit
 import io
 import pandas as pd
-import pickle # Untuk operasi pickle (model ML)
-# Baris 'from sklearn import' DIHAPUS karena tidak valid dan tidak diperlukan di sini
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file
-from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
+import feedparser
+from urllib.parse import quote, urlparse
+import re
+import time
+import os
 
-# Import untuk WebDriver dan WebDriver Manager
-import os # Untuk os.path.join
+# Import Selenium untuk menangani redirect link Google News
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service as ChromeService # Beri alias
-from selenium.webdriver.chrome.options import Options as ChromeOptions # Beri alias
-from selenium.webdriver.edge.service import Service as EdgeService # Untuk Edge
-from selenium.webdriver.edge.options import Options as EdgeOptions # Untuk Edge
+from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.microsoft import EdgeChromiumDriverManager # Ini untuk EdgeDriver
-from selenium.webdriver.common.by import By # Untuk find_elements(By.XPATH, ...)
 
 from config import Config
-from utils import database, scraper, sentiment # Ini adalah impor utama ML/NLP Anda
-from scheduler.monitor import run_monitoring
+from utils import database, scraper, sentiment
 
 app = Flask(__name__)
 app.config.from_object(Config)
-
-# --- SCHEDULER SETUP ---
-scheduler = BackgroundScheduler(daemon=True)
-scheduler.add_job(run_monitoring, 'interval', minutes=60, id='monitoring_job')
-scheduler.start()
-atexit.register(lambda: scheduler.shutdown())
 
 # Inisialisasi database
 with app.app_context():
@@ -44,17 +29,16 @@ with app.app_context():
 def home():
     return render_template('dashboard/home.html')
 
+# --- Rute untuk Dashboard Analisis ---
 @app.route('/analisis')
 def analisis():
     sentiment_filter = request.args.get('filter', None)
-    
     conn = database.get_db_connection()
     try:
         full_df = pd.read_sql_query("SELECT * FROM analisis_data", conn)
     except pd.io.sql.DatabaseError:
         full_df = pd.DataFrame()
     conn.close()
-
     total_berita = len(full_df)
     positif_count, negatif_count, netral_count = 0, 0, 0
     if not full_df.empty and 'sentimen' in full_df.columns:
@@ -62,12 +46,10 @@ def analisis():
         positif_count = int(sentimen_counts_total.get('Positif', 0))
         negatif_count = int(sentimen_counts_total.get('Negatif', 0))
         netral_count = int(sentimen_counts_total.get('Netral', 0))
-
     if sentiment_filter and not full_df.empty:
-        df_for_charts = full_df[full_full['sentimen'] == sentiment_filter].copy() # PERBAIKAN: df_for_charts['sentimen']
+        df_for_charts = full_df[full_df['sentimen'] == sentiment_filter].copy()
     else:
         df_for_charts = full_df.copy()
-
     sentimen_labels, sentimen_data, sentimen_colors = [], [], []
     color_map = {'Positif': '#198754', 'Negatif': '#dc3545', 'Netral': '#6c757d'}
     if not df_for_charts.empty and 'sentimen' in df_for_charts.columns:
@@ -75,11 +57,10 @@ def analisis():
         sentimen_labels = sentimen_counts_chart.index.tolist()
         sentimen_data = sentimen_counts_chart.values.tolist()
         sentimen_colors = [color_map.get(label, '#CCCCCC') for label in sentimen_labels]
-
     analysis_list = database.get_filtered_analisis_data(sentiment_filter)
     
     trend_labels, trend_positif, trend_negatif, trend_netral = [], [], [], []
-    if not df_for_charts.empty:
+    if not df_for_charts.empty and 'tanggal' in df_for_charts.columns:
         df_for_charts['tanggal_lengkap'] = pd.to_datetime(df_for_charts['tahun'].astype(str) + '-' + df_for_charts['bulan'].astype(str) + '-' + df_for_charts['tanggal'].astype(str), errors='coerce')
         df_for_charts.dropna(subset=['tanggal_lengkap'], inplace=True)
         
@@ -100,9 +81,37 @@ def analisis():
         total_berita=total_berita, positif_count=positif_count, negatif_count=negatif_count, netral_count=netral_count,
         sentimen_labels=sentimen_labels, sentimen_data=sentimen_data, sentimen_colors=sentimen_colors,
         analysis_list=analysis_list, active_filter=sentiment_filter,
-        trend_labels=trend_labels, trend_positif_data=trend_positif, trend_negatif_data=trend_negatif, trend_netral_data=trend_netral,
-        latest_news=database.get_latest_analisis_data(5)
+        latest_news=database.get_latest_analisis_data(5),
+        # ▼▼▼ BARIS-BARIS INI YANG DIPERBAIKI ▼▼▼
+        trend_labels=trend_labels,
+        trend_positif_data=trend_positif,
+        trend_negatif_data=trend_negatif,
+        trend_netral_data=trend_netral
     )
+
+@app.route('/analisis/cek_manual', methods=['POST'])
+def cek_sentimen_manual():
+    user_input = request.form.get('user_input')
+    if not user_input:
+        flash('Input tidak boleh kosong.', 'warning')
+        return redirect(url_for('analisis'))
+
+    news_data = scraper.scrape_news_data(user_input)
+    
+    if not news_data:
+        flash('Gagal mengambil data dari URL atau input tidak valid.', 'danger')
+        return redirect(url_for('analisis'))
+
+    if "manual_input" not in news_data['link_pemberitaan']:
+        if database.is_analisis_url_exist(news_data['link_pemberitaan']) or database.is_pemberitaan_url_exist(news_data['link_pemberitaan']):
+            flash('Berita dari link ini sudah ada di dalam database.', 'warning')
+            return redirect(url_for('analisis'))
+
+    hasil_sentimen = sentiment.analyze_title_sentiment(news_data['judul_pemberitaan'])
+    news_data['sentimen'] = hasil_sentimen
+    database.add_analisis_data(news_data)
+    flash(f"Judul berhasil dianalisis dan disimpan dengan sentimen: {hasil_sentimen}", "success")
+    return redirect(url_for('analisis'))
 
 @app.route('/analisis/edit/<int:analysis_id>', methods=['GET', 'POST'])
 def edit_analisis_route(analysis_id):
@@ -141,22 +150,20 @@ def promote_news_route(analysis_id):
         return redirect(url_for('analisis'))
     news_data = dict(item_to_promote)
     news_data['media_pemberitaan'] = "Media Online"
-    news_data['kategori_media'] = "Dipromosikan dari Analisis"
+    news_data['kategori_media'] = "Belum Dikategorikan"
     database.add_pemberitaan(news_data)
     flash(f"Berita '{item_to_promote['judul_pemberitaan']}' berhasil dipromosikan.", 'success')
     return redirect(url_for('analisis'))
 
-# ▼▼▼ RUTE BARU DITAMBAHKAN DI SINI ▼▼▼
 @app.route('/analisis/promote_all_positive', methods=['POST'])
 def promote_all_positive_route():
     positive_items = database.get_all_positive_analisis_data()
-    promoted_count = 0
-    skipped_count = 0
+    promoted_count, skipped_count = 0, 0
     for item in positive_items:
         if not database.is_pemberitaan_url_exist(item['link_pemberitaan']):
             news_data = dict(item)
             news_data['media_pemberitaan'] = "Media Online"
-            news_data['kategori_media'] = "Dipromosikan dari Analisis"
+            news_data['kategori_media'] = "Belum Dikategorikan"
             database.add_pemberitaan(news_data)
             promoted_count += 1
         else:
@@ -170,23 +177,22 @@ def promote_selected_route():
     if not selected_ids:
         flash('Tidak ada berita yang dipilih.', 'warning')
         return redirect(url_for('analisis'))
-    promoted_count = 0
-    skipped_count = 0
+    promoted_count, skipped_count = 0, 0
     for item_id in selected_ids:
         item = database.get_analisis_data_by_id(item_id)
         if item:
             if not database.is_pemberitaan_url_exist(item['link_pemberitaan']):
                 news_data = dict(item)
                 news_data['media_pemberitaan'] = "Media Online"
-                news_data['kategori_media'] = "Dipromosikan dari Analisis"
+                news_data['kategori_media'] = "Belum Dikategorikan"
                 database.add_pemberitaan(news_data)
                 promoted_count += 1
             else:
                 skipped_count += 1
     flash(f'Berhasil mempromosikan {promoted_count} berita. {skipped_count} berita dilewati karena sudah ada.', 'success')
     return redirect(url_for('analisis'))
-# ▲▲▲ AKHIR DARI RUTE BARU ▲▲▲
 
+# --- Rute untuk Data Pemberitaan ---
 @app.route('/pemberitaan')
 def pemberitaan():
     news_list = database.get_all_pemberitaan()
@@ -195,23 +201,20 @@ def pemberitaan():
 @app.route('/add', methods=['POST'])
 def add_news_route():
     url = request.form.get('url')
-    media_pemberitaan = request.form.get('media_pemberitaan')
-    kategori_media = request.form.get('kategori_media')
     if not url:
         flash('URL tidak boleh kosong!', 'danger')
         return redirect(url_for('pemberitaan'))
-    if database.is_pemberitaan_url_exist(url) or database.is_analisis_url_exist(url):
-        flash('Berita dengan URL tersebut sudah ada.', 'warning')
+    if database.is_pemberitaan_url_exist(url):
+        flash('Berita dengan URL tersebut sudah ada di tabel pemberitaan.', 'warning')
         return redirect(url_for('pemberitaan'))
+    
     news_data = scraper.scrape_news_data(url)
+    
     if news_data:
-        news_data['media_pemberitaan'] = media_pemberitaan
-        news_data['kategori_media'] = kategori_media
-        tonalitas = sentiment.analyze_title_sentiment(news_data['judul_pemberitaan'])
-        news_data['sentimen'] = tonalitas
+        news_data['media_pemberitaan'] = request.form.get('media_pemberitaan')
+        news_data['kategori_media'] = request.form.get('kategori_media')
         database.add_pemberitaan(news_data)
-        database.add_analisis_data(news_data)
-        flash(f"Berita berhasil ditambahkan dengan sentimen '{tonalitas}'!", 'success')
+        flash("Berita berhasil ditambahkan ke Data Pemberitaan.", 'success')
     else:
         flash('Gagal mengambil data dari URL. Pastikan link valid.', 'danger')
     return redirect(url_for('pemberitaan'))
@@ -225,145 +228,153 @@ def edit_news_route(news_id):
     if request.method == 'POST':
         data = {
             'id': news_id, 
-            'judul_pemberitaan': request.form.get('judul_pemberitaan'), 
+            'judul_pemberitaan': request.form.get('judul_pemberitaan'),
+            'nama_media': request.form.get('nama_media'),
+            'tanggal': request.form.get('tanggal'),
+            'bulan': request.form.get('bulan'),
+            'tahun': request.form.get('tahun'),
+            'media_pemberitaan': request.form.get('media_pemberitaan'),
             'kategori_media': request.form.get('kategori_media')
         }
         database.update_pemberitaan(data)
         flash('Berita berhasil diperbarui!', 'success')
         return redirect(url_for('pemberitaan'))
-    return render_template('berita/edit.html', news=news_item) # FIX: code was truncated here
+    return render_template('berita/edit.html', news=news_item)
 
-# --- Fungsi dan Rute Pencarian Berita Manual (Menggunakan Selenium) ---
-# Perhatikan: Ini adalah bagian yang menyebabkan masalah ChromeDriver
-# Pastikan sudah import os, Service, Options, webdriver di bagian atas
-@app.route('/cari-berita')
+@app.route('/delete/<int:news_id>', methods=['POST'])
+def delete_news_route(news_id):
+    database.delete_pemberitaan_by_id(news_id)
+    flash('Berita berhasil dihapus.', 'success')
+    return redirect(url_for('pemberitaan'))
+
+@app.route('/reset', methods=['POST'])
+def reset_all_data_route():
+    database.delete_all_pemberitaan()
+    flash('Semua data berita resmi telah direset.', 'warning')
+    return redirect(url_for('pemberitaan'))
+
+@app.route('/download-excel')
+def download_excel():
+    conn = database.get_db_connection()
+    df = pd.read_sql_query("SELECT id, tanggal, bulan, tahun, media_pemberitaan, judul_pemberitaan, link_pemberitaan, nama_media, kategori_media FROM pemberitaan_resmi", conn)
+    conn.close()
+    if df.empty:
+        flash('Tidak ada data untuk diunduh.', 'warning')
+        return redirect(url_for('pemberitaan'))
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Pemberitaan')
+    output.seek(0)
+    return send_file(output, as_attachment=True, download_name='laporan_pemberitaan.xlsx')
+
+# --- Rute untuk Fitur Cari Berita ---
+@app.route('/cari-berita', methods=['GET'])
 def cari_berita():
-    return render_template('dashboard/cari_berita.html')
+    hasil = database.get_all_hasil_pencarian()
+    return render_template('dashboard/cari_berita.html', hasil_pencarian=hasil)
 
 @app.route('/cari-berita/run', methods=['POST'])
 def run_pencarian_berita():
-    search_query = request.form.get('search_query')
-    search_source = request.form.get('search_source') # 'google' atau 'bing'
-    
-    if not search_query:
-        flash('Kata kunci pencarian tidak boleh kosong!', 'danger')
-        return redirect(url_for('cari_berita'))
-    
-    driver = None # Inisialisasi driver
-    try:
-        # === LOGIKA PEMILIHAN BROWSER BERDASARKAN KONFIGURASI ===
-        browser_choice = app.config['BROWSER_FOR_SCRAPING'].lower()
-        
-        if browser_choice == 'chrome':
-            print("DEBUG: Menggunakan Chrome WebDriver.")
-            # Menggunakan webdriver_manager untuk mengelola ChromeDriver
-            service = ChromeService(ChromeDriverManager().install())
-            options = ChromeOptions()
-            # Opsi untuk Chrome
-            options.add_argument('--headless') # Jalankan headless jika tidak perlu UI
-            options.add_argument('--no-sandbox')
-            options.add_argument('--disable-dev-shm-usage')
-            
-            driver = webdriver.Chrome(service=service, options=options)
-            
-        elif browser_choice == 'edge':
-            print("DEBUG: Menggunakan Edge WebDriver.")
-            # Menggunakan webdriver_manager untuk mengelola EdgeDriver
-            service = EdgeService(EdgeChromiumDriverManager().install())
-            options = EdgeOptions()
-            # Opsi untuk Edge (seringkali mirip dengan Chrome)
-            options.add_argument('--headless')
-            options.add_argument('--no-sandbox')
-            options.add_argument('--disable-dev-shm-usage')
-            
-            driver = webdriver.Edge(service=service, options=options)
-            
-        else:
-            flash(f"ERROR: Konfigurasi BROWSER_FOR_SCRAPING di config.py tidak valid: '{browser_choice}'. Gunakan 'chrome' atau 'edge'.", 'danger')
-            return redirect(url_for('cari_berita'))
+    keywords_input = request.form.get('keywords')
+    limit = int(request.form.get('limit', 25)) 
 
-        if driver is None: # Kasus jika driver tidak terinisialisasi karena pilihan browser salah
-            flash("Gagal menginisialisasi WebDriver. Cek konfigurasi.", 'danger')
+    if not keywords_input:
+        flash('Keyword pencarian tidak boleh kosong.', 'warning')
+        return redirect(url_for('cari_berita'))
+
+    keywords_list = [k.strip() for k in re.split(r'[,\n]', keywords_input) if k.strip()]
+    database.clear_hasil_pencarian()
+    
+    all_entries = []
+    unique_links = set()
+
+    for keyword in keywords_list:
+        search_term = quote(keyword)
+        source_url = f"https://news.google.com/rss/search?q={search_term}&hl=id&gl=ID&ceid=ID:id"
+        feed = feedparser.parse(source_url)
+        for entry in feed.entries:
+            if entry.link not in unique_links:
+                all_entries.append(entry)
+                unique_links.add(entry.link)
+
+    found_count = 0
+    
+    options = webdriver.ChromeOptions()
+    options.add_argument('--headless')
+    options.add_argument('--disable-gpu')
+    options.add_argument('--log-level=3')
+    options.add_experimental_option('excludeSwitches', ['enable-logging'])
+    driver = None
+
+    try:
+        driver_path = os.path.join(os.getcwd(), 'chromedriver.exe')
+        if not os.path.exists(driver_path):
+            flash("Error: chromedriver.exe tidak ditemukan.", "danger")
             return redirect(url_for('cari_berita'))
         
-        # Logika pencarian dan scraping (sama seperti sebelumnya)
-        if search_source == 'google':
-            driver.get(f"https://www.google.com/search?q={search_query}&tbm=nws") # News tab
-        elif search_source == 'bing':
-            driver.get(f"https://www.bing.com/news/search?q={search_query}")
+        service = ChromeService(executable_path=driver_path)
+        driver = webdriver.Chrome(service=service, options=options)
         
-        # Impor By sudah dilakukan di awal file, ini adalah komentar sisa
-        news_elements = driver.find_elements(By.XPATH, "//a[contains(@href, 'http')]") # Contoh sederhana, perlu disesuaikan
-        
-        scraped_count = 0
-        for element in news_elements:
-            url = element.get_attribute('href')
-            if url and not database.is_analisis_url_exist(url) and not database.is_pemberitaan_url_exist(url):
-                news_data = scraper.scrape_news_data(url) # Menggunakan scraper Anda
-                if news_data:
-                    tonalitas = sentiment.analyze_title_sentiment(news_data['judul_pemberitaan'])
-                    news_data['sentimen'] = tonalitas
-                    database.add_analisis_data(news_data)
-                    scraped_count += 1
-        
-        flash(f"Pencarian selesai. Menemukan dan memproses {scraped_count} berita baru.", 'success')
-        
-    except Exception as e:
-        flash(f"Terjadi error saat pencarian atau scraping: {e}", 'danger')
-        print(f"ERROR: Pencarian atau scraping gagal: {e}")
+        entries_to_process = all_entries[:limit]
+
+        for entry in entries_to_process:
+            try:
+                google_link = entry.link
+                driver.get(google_link)
+                time.sleep(0.5) 
+                real_link = driver.current_url
+
+                if "news.google.com" in urlparse(real_link).netloc:
+                    continue
+
+                news_item = {
+                    'judul_pemberitaan': entry.title,
+                    'link_pemberitaan': real_link,
+                    'nama_media': urlparse(real_link).netloc.replace('www.', '')
+                }
+                database.add_hasil_pencarian(news_item)
+                found_count += 1
+            except Exception as e:
+                print(f"Gagal memproses link: {entry.link}. Error: {e}")
+                continue
     finally:
-        if driver: # Pastikan driver ditutup jika berhasil diinisialisasi
+        if driver:
             driver.quit()
-            
+    
+    flash(f"{found_count} berita ditemukan dari keyword yang Anda masukkan.", "success")
     return redirect(url_for('cari_berita'))
 
+@app.route('/cari-berita/reset', methods=['POST'])
+def reset_pencarian_route():
+    """Menghapus semua hasil pencarian dari tabel sementara."""
+    database.clear_hasil_pencarian()
+    flash('Hasil pencarian berhasil direset.', 'info')
+    return redirect(url_for('cari_berita'))
 
-@app.route('/monitoring')
-def monitoring_route():
-    keywords = database.get_all_keywords()
-    latest_analysis = database.get_latest_analisis_data(limit=10)
-    job = scheduler.get_job('monitoring_job')
-    is_running = job is not None and job.next_run_time is not None
-    return render_template('dashboard/monitoring.html', keywords=keywords, latest_analysis=latest_analysis, is_running=is_running)
+@app.route('/analisis/terpilih', methods=['POST'])
+def analisis_berita_terpilih():
+    selected_links = request.form.getlist('selected_links')
+    if not selected_links:
+        flash("Tidak ada berita yang dipilih untuk dianalisis.", "warning")
+        return redirect(url_for('cari_berita'))
 
-@app.route('/monitoring/add', methods=['POST'])
-def add_keyword_route():
-    keyword = request.form.get('keyword')
-    if keyword:
-        database.add_keyword(keyword.strip())
-        flash(f"Keyword '{keyword}' berhasil ditambahkan.", "success")
-    else:
-        flash("Keyword tidak boleh kosong.", "danger")
-        return redirect(url_for('monitoring_route'))
-
-@app.route('/monitoring/delete/<int:keyword_id>', methods=['POST'])
-def delete_keyword_route(keyword_id):
-    database.delete_keyword(keyword_id)
-    flash("Keyword berhasil dihapus.", "success")
-    return redirect(url_for('monitoring_route'))
-
-@app.route('/monitoring/run', methods=['POST'])
-def run_monitoring_now():
-    try:
-        run_monitoring()
-        flash("Pemantauan manual berhasil dijalankan. Cek halaman 'Dashboard Analisis' untuk hasilnya.", "info")
-    except Exception as e:
-        flash(f"Terjadi error saat menjalankan pemantauan: {e}", "danger")
-        return redirect(url_for('monitoring_route'))
-
-@app.route('/monitoring/toggle', methods=['POST'])
-def toggle_scheduler_route():
-    job = scheduler.get_job('monitoring_job')
-    if job and job.next_run_time:
-        scheduler.pause_job('monitoring_job')
-        flash("Scheduler pemantauan otomatis telah dihentikan.", "warning")
-    elif job:
-        scheduler.resume_job('monitoring_job')
-        flash("Scheduler pemantauan otomatis telah dijalankan kembali.", "success")
-    else:
-        scheduler.add_job(run_monitoring, 'interval', minutes=60, id='monitoring_job')
-        flash("Scheduler baru telah dibuat dan dijalankan.", "success")
-        return redirect(url_for('monitoring_route'))
+    analyzed_count = 0
+    skipped_count = 0
+    for link in selected_links:
+        if database.is_analisis_url_exist(link) or database.is_pemberitaan_url_exist(link):
+            skipped_count += 1
+            continue
+        
+        news_data = scraper.scrape_news_data(link)
+        
+        if news_data:
+            hasil_sentimen = sentiment.analyze_title_sentiment(news_data['judul_pemberitaan'])
+            news_data['sentimen'] = hasil_sentimen
+            database.add_analisis_data(news_data)
+            analyzed_count += 1
+    
+    flash(f"{analyzed_count} berita berhasil dianalisis dan disimpan. {skipped_count} berita dilewati.", "success")
+    return redirect(url_for('analisis'))
 
 if __name__ == '__main__':
     app.run(debug=True)

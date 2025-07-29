@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
 {% block page_title %}Data Pemberitaan{% endblock %}
-
 {% block title %}Data Pemberitaan{% endblock %}
 
 {% block content %}
 
+<!-- Form untuk Menambah Berita Manual -->
 <div class="card mb-4 shadow-sm">
     <div class="card-header bg-light">
         <h5 class="mb-0"><i class="bi bi-input-cursor-text"></i> Tambah Berita Manual</h5>
@@ -26,14 +26,16 @@
                 </div>
                 <div class="col-md-6 mb-3">
                     <label for="kategori_media" class="form-label fw-bold">Kategori Media</label>
+                    <!-- ▼▼▼ DROPDOWN INI DIPERBARUI SESUAI FORMAT ANDA ▼▼▼ -->
                     <select class="form-select" id="kategori_media" name="kategori_media" required>
                         <option value="Media Online - Local & Lainnya Media Online" selected>Media Online - Local & Lainnya Media Online</option>
-                        <option value="TV - Local & Lainnya TV">TV - Local & Lainnya TV</option>
+                        <option value="TV - Local & Lainnya Tv">TV - Local & Lainnya Tv</option>
                         <option value="Media Elektronik - Iklan TV">Media Elektronik - Iklan TV</option>
                         <option value="Media Elektronik - RUNNING TEXT TV LOKAL">Media Elektronik - RUNNING TEXT TV LOKAL</option>
                         <option value="Radio - Local & Lainnya Radio">Radio - Local & Lainnya Radio</option>
                         <option value="Media Cetak - Local & Lainnya Media Cetak">Media Cetak - Local & Lainnya Media Cetak</option>
                     </select>
+                    <!-- ▲▲▲ AKHIR PERUBAHAN ▲▲▲ -->
                 </div>
             </div>
             <button class="btn btn-primary w-100" type="submit">
@@ -43,15 +45,15 @@
     </div>
 </div>
 
+<!-- Tabel Utama untuk Menampilkan Data Berita -->
 <div class="card shadow-sm">
     <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap">
         <h5 class="mb-0 me-3">Dokumentasi Pemberitaan</h5>
         <div>
-            {# Baris ini sudah diperbaiki dan harusnya tidak ada BuildError lagi #}
             <a href="{{ url_for('download_excel') }}" class="btn btn-success btn-sm">
                 <i class="bi bi-file-earmark-excel-fill"></i> Download
             </a>
-            <form action="{{ url_for('reset_all_data_route') }}" method="POST" class="d-inline" onsubmit="return confirm('PERINGATAN: Tindakan ini akan menghapus SEMUA data berita secara permanen. Anda yakin?');">
+            <form action="{{ url_for('reset_all_data_route') }}" method="POST" class="d-inline form-confirm" data-message="Anda yakin ingin mereset SEMUA data berita?">
                 <button type="submit" class="btn btn-danger btn-sm">
                     <i class="bi bi-trash"></i> Reset
                 </button>
@@ -80,20 +82,65 @@
                         <td>{{ news.tanggal }}</td>
                         <td>{{ news.bulan }}</td>
                         <td>{{ news.tahun }}</td>
-                        <td>{{ news.media_pemberitaan }}</td>
+                        <td style="min-width: 180px;">
+                            <form action="{{ url_for('edit_news_route', news_id=news.id) }}" method="POST">
+                                <input type="hidden" name="judul_pemberitaan" value="{{ news.judul_pemberitaan }}">
+                                <input type="hidden" name="nama_media" value="{{ news.nama_media }}">
+                                <input type="hidden" name="tanggal" value="{{ news.tanggal }}">
+                                <input type="hidden" name="bulan" value="{{ news.bulan }}">
+                                <input type="hidden" name="tahun" value="{{ news.tahun }}">
+                                <input type="hidden" name="kategori_media" value="{{ news.kategori_media }}">
+                                
+                                <select name="media_pemberitaan" class="form-select form-select-sm" onchange="this.form.submit()">
+                                    <option value="Media Online" {% if news.media_pemberitaan == 'Media Online' %}selected{% endif %}>Media Online</option>
+                                    <option value="Media Cetak" {% if news.media_pemberitaan == 'Media Cetak' %}selected{% endif %}>Media Cetak</option>
+                                    <option value="Media Elektronik" {% if news.media_pemberitaan == 'Media Elektronik' %}selected{% endif %}>Media Elektronik</option>
+                                </select>
+                            </form>
+                        </td>
                         <td style="min-width: 300px;">{{ news.judul_pemberitaan }}</td>
-                        <td><a href="{{ news.link_pemberitaan }}" target="_blank">Lihat Berita</a></td>
+                        <td><a href="{{ news.link_pemberitaan }}" target="_blank">Kunjungi</a></td>
                         <td>{{ news.nama_media }}</td>
-                        <td>{{ news.kategori_media }}</td>
+                        <td style="min-width: 220px;">
+                             <form action="{{ url_for('edit_news_route', news_id=news.id) }}" method="POST">
+                                <input type="hidden" name="judul_pemberitaan" value="{{ news.judul_pemberitaan }}">
+                                <input type="hidden" name="nama_media" value="{{ news.nama_media }}">
+                                <input type="hidden" name="tanggal" value="{{ news.tanggal }}">
+                                <input type="hidden" name="bulan" value="{{ news.bulan }}">
+                                <input type="hidden" name="tahun" value="{{ news.tahun }}">
+                                <input type="hidden" name="media_pemberitaan" value="{{ news.media_pemberitaan }}">
+
+                                <!-- ▼▼▼ DROPDOWN INI DIPERBARUI SESUAI FORMAT ANDA ▼▼▼ -->
+                                <select name="kategori_media" class="form-select form-select-sm" onchange="this.form.submit()">
+                                    <option value="Media Online - Local & Lainnya Media Online" {% if news.kategori_media == 'Media Online - Local & Lainnya Media Online' %}selected{% endif %}>Media Online - Local & Lainnya Media Online</option>
+                                    <option value="TV - Local & Lainnya Tv" {% if news.kategori_media == 'TV - Local & Lainnya Tv' %}selected{% endif %}>TV - Local & Lainnya Tv</option>
+                                    <option value="Media Elektronik - Iklan TV" {% if news.kategori_media == 'Media Elektronik - Iklan TV' %}selected{% endif %}>Media Elektronik - Iklan TV</option>
+                                    <option value="Media Elektronik - RUNNING TEXT TV LOKAL" {% if news.kategori_media == 'Media Elektronik - RUNNING TEXT TV LOKAL' %}selected{% endif %}>Media Elektronik - RUNNING TEXT TV LOKAL</option>
+                                    <option value="Radio - Local & Lainnya Radio" {% if news.kategori_media == 'Radio - Local & Lainnya Radio' %}selected{% endif %}>Radio - Local & Lainnya Radio</option>
+                                    <option value="Media Cetak - Local & Lainnya Media Cetak" {% if news.kategori_media == 'Media Cetak - Local & Lainnya Media Cetak' %}selected{% endif %}>Media Cetak - Local & Lainnya Media Cetak</option>
+                                    <option value="Belum Dikategorikan" {% if news.kategori_media == 'Belum Dikategorikan' %}selected{% endif %}>Belum Dikategorikan</option>
+                                </select>
+                                <!-- ▲▲▲ AKHIR PERUBAHAN ▲▲▲ -->
+                            </form>
+                        </td>
                         <td class="text-center">
                             <div class="btn-group" role="group">
-                                <a href="{{ url_for('edit_news_route', news_id=news.id) }}" class="btn btn-warning btn-sm" title="Edit">
+                                <button type="button" class="btn btn-warning btn-sm edit-btn" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#editNewsModal"
+                                        data-id="{{ news.id }}"
+                                        data-judul="{{ news.judul_pemberitaan }}"
+                                        data-nama-media="{{ news.nama_media }}"
+                                        data-tanggal="{{ news.tanggal }}"
+                                        data-bulan="{{ news.bulan }}"
+                                        data-tahun="{{ news.tahun }}"
+                                        data-media-pemberitaan="{{ news.media_pemberitaan }}"
+                                        data-kategori-media="{{ news.kategori_media }}"
+                                        title="Edit Detail">
                                     <i class="bi bi-pencil-square"></i>
-                                </a>
-                                <form action="{{ url_for('delete_news_route', news_id=news.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus berita ini?');">
-                                    <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
-                                        <i class="bi bi-trash-fill"></i>
-                                    </button>
+                                </button>
+                                <form action="{{ url_for('delete_news_route', news_id=news.id) }}" method="POST" class="d-inline form-confirm" data-message="Anda yakin ingin menghapus berita ini?">
+                                    <button type="submit" class="btn btn-danger btn-sm" title="Hapus"><i class="bi bi-trash-fill"></i></button>
                                 </form>
                             </div>
                         </td>
@@ -110,4 +157,104 @@
         </div>
     </div>
 </div>
+
+<!-- Modal untuk Edit Berita -->
+<div class="modal fade" id="editNewsModal" tabindex="-1" aria-labelledby="editNewsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editNewsModalLabel">Edit Data Berita</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-form" method="POST">
+                    <!-- ... (form fields for judul, nama_media, tanggal, etc.) ... -->
+                    <div class="mb-3">
+                        <label for="edit-judul_pemberitaan" class="form-label fw-bold">Judul Pemberitaan</label>
+                        <textarea class="form-control" id="edit-judul_pemberitaan" name="judul_pemberitaan" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-nama_media" class="form-label fw-bold">Nama Media</label>
+                        <input type="text" class="form-control" id="edit-nama_media" name="nama_media" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="edit-tanggal" class="form-label fw-bold">Tanggal</label>
+                            <input type="number" class="form-control" id="edit-tanggal" name="tanggal" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="edit-bulan" class="form-label fw-bold">Bulan</label>
+                            <input type="number" class="form-control" id="edit-bulan" name="bulan" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="edit-tahun" class="form-label fw-bold">Tahun</label>
+                            <input type="number" class="form-control" id="edit-tahun" name="tahun" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-media_pemberitaan" class="form-label fw-bold">Media Pemberitaan</label>
+                        <select class="form-select" id="edit-media_pemberitaan" name="media_pemberitaan" required>
+                            <option value="Media Online">Media Online</option>
+                            <option value="Media Cetak">Media Cetak</option>
+                            <option value="Media Elektronik">Media Elektronik</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit-kategori_media" class="form-label fw-bold">Kategori Media</label>
+                        <!-- ▼▼▼ DROPDOWN INI DIPERBARUI SESUAI FORMAT ANDA ▼▼▼ -->
+                        <select class="form-select" id="edit-kategori_media" name="kategori_media" required>
+                            <option value="Media Online - Local & Lainnya Media Online">Media Online - Local & Lainnya Media Online</option>
+                            <option value="TV - Local & Lainnya Tv">TV - Local & Lainnya Tv</option>
+                            <option value="Media Elektronik - Iklan TV">Media Elektronik - Iklan TV</option>
+                            <option value="Media Elektronik - RUNNING TEXT TV LOKAL">Media Elektronik - RUNNING TEXT TV LOKAL</option>
+                            <option value="Radio - Local & Lainnya Radio">Radio - Local & Lainnya Radio</option>
+                            <option value="Media Cetak - Local & Lainnya Media Cetak">Media Cetak - Local & Lainnya Media Cetak</option>
+                            <option value="Belum Dikategorikan">Belum Dikategorikan</option>
+                        </select>
+                        <!-- ▲▲▲ AKHIR PERUBAHAN ▲▲▲ -->
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-primary" form="edit-form">Simpan Perubahan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript untuk Modal (Tidak Berubah) -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const editModal = document.getElementById('editNewsModal');
+    if (editModal) {
+        editModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const newsId = button.getAttribute('data-id');
+            const judul = button.getAttribute('data-judul');
+            const namaMedia = button.getAttribute('data-nama-media');
+            const tanggal = button.getAttribute('data-tanggal');
+            const bulan = button.getAttribute('data-bulan');
+            const tahun = button.getAttribute('data-tahun');
+            const mediaPemberitaan = button.getAttribute('data-media-pemberitaan');
+            const kategoriMedia = button.getAttribute('data-kategori-media');
+
+            const modalForm = editModal.querySelector('#edit-form');
+            const modalTitle = editModal.querySelector('.modal-title');
+            
+            modalForm.action = `/edit/${newsId}`;
+
+            modalTitle.textContent = `Edit Berita ID: ${newsId}`;
+            modalForm.querySelector('#edit-judul_pemberitaan').value = judul;
+            modalForm.querySelector('#edit-nama_media').value = namaMedia;
+            modalForm.querySelector('#edit-tanggal').value = tanggal;
+            modalForm.querySelector('#edit-bulan').value = bulan;
+            modalForm.querySelector('#edit-tahun').value = tahun;
+            modalForm.querySelector('#edit-media_pemberitaan').value = mediaPemberitaan;
+            modalForm.querySelector('#edit-kategori_media').value = kategoriMedia;
+        });
+    }
+});
+</script>
 {% endblock %}

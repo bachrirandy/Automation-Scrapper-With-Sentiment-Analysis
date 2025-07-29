@@ -1,27 +1,20 @@
-from requests_html import HTMLSession
+# test_utama.py
+from utils import scraper
+import time
 
-print("--- MEMULAI TES SCRAPER ---")
-session = HTMLSession()
-# Ganti link ini dengan link yang gagal di aplikasi Anda
-url = 'https://www.detik.com/' 
+print("--- MEMULAI TES SCRAPER UTAMA ---")
 
-print(f"Mencoba mengakses: {url}")
-try:
-    r = session.get(url, timeout=30)
-    print(f"Status Kode: {r.status_code}")
-    print("Mencoba me-render JavaScript...")
+# GANTI DENGAN LINK YANG GAGAL DI APLIKASI ANDA
+url_yang_gagal = "https://aksesjambi.com/news/22/05/2025/pln-uid-s2jb-raih-penghargaan-tjsl-membina-umkm-kelompok-wanita-tani-beguyur/" 
 
-    r.html.render(sleep=3, timeout=40)
+print(f"Mencoba scrape URL: {url_yang_gagal}")
+news_data = scraper.scrape_news_data(url_yang_gagal)
 
-    judul = r.html.find('title', first=True)
-    if judul:
-        print(f"Render berhasil. Judul halaman: {judul.text}")
-        print("\n✅ Scraper dasar BERHASIL dijalankan!")
-    else:
-        print("\n❌ Render selesai, TAPI judul tidak ditemukan.")
-
-except Exception as e:
-    print("\n❌❌❌ TERJADI ERROR ❌❌❌")
-    print(f"Error: {e}")
+print("\n--- HASIL ---")
+if news_data:
+    print("✅ Scraping BERHASIL.")
+    print(f"Data: {news_data}")
+else:
+    print("❌ Scraping GAGAL.")
 
 print("--- TES SELESAI ---")

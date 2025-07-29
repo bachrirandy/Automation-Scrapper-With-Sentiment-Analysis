@@ -10,24 +10,43 @@
     </div>
     <div class="card-body">
         <form action="{{ url_for('run_pencarian_berita') }}" method="POST" id="search-form">
-            <div class="mb-3">
-                <label for="keyword" class="form-label">Masukkan kata kunci (contoh: "PLN UID S2JB")</label>
-                <input type="text" name="keyword" id="keyword" class="form-control" required>
+            <div class="row">
+                <div class="col-md-9 mb-3">
+                    <label for="keywords" class="form-label">Masukkan satu atau beberapa kata kunci (pisahkan dengan koma atau baris baru):</label>
+                    <textarea class="form-control" name="keywords" id="keywords" rows="3" required placeholder="Contoh: PLN Palembang, pemadaman Sumsel, ..."></textarea>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="limit" class="form-label">Batas Hasil Pencarian:</label>
+                    <select class="form-select" name="limit" id="limit">
+                        <option value="10">10</option>
+                        <option value="25" selected>25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary w-100" id="search-btn">
-                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                <span class="button-text">Cari Berita Sekarang</span>
-            </button>
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary" id="search-btn">
+                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    <span class="button-text">Cari Berita Sekarang</span>
+                </button>
+            </div>
         </form>
     </div>
 </div>
 
+<!-- Tabel Hasil Pencarian -->
 <div class="card shadow-sm">
-    <div class="card-header">
+    <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Hasil Pencarian</h5>
+        <form action="{{ url_for('reset_pencarian_route') }}" method="POST" class="form-confirm" data-message="Anda yakin ingin mereset hasil pencarian?">
+            <button type="submit" class="btn btn-warning btn-sm">
+                <i class="bi bi-arrow-clockwise"></i> Reset Hasil
+            </button>
+        </form>
     </div>
     <div class="card-body">
-        <form action="{{ url_for('analisis_berita_terpilih') }}" method="POST">
+        <form action="{{ url_for('analisis_berita_terpilih') }}" method="POST" class="form-confirm" data-message="Anda yakin ingin menganalisis berita yang dipilih?">
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead>

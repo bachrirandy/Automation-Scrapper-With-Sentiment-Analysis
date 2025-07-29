@@ -10,6 +10,7 @@
 </head>
 <body>
 
+<!-- Sidebar (Offcanvas) -->
 <div class="offcanvas offcanvas-start text-bg-dark" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
     <div class="offcanvas-header">
         <a href="{{ url_for('home') }}" class="d-flex align-items-center text-white text-decoration-none">
@@ -62,6 +63,7 @@
     </div>
 </div>
 
+<!-- Konten Utama Halaman -->
 <div class="main-content">
     <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom sticky-top">
         <div class="container-fluid">
@@ -87,6 +89,11 @@
         {% endwith %}
 
         {% block content %}{% endblock %}
+
+        <footer class="mt-5 text-center text-muted">
+            <hr>
+            <p>&copy; 2025 - Dikembangkan oleh Tim Mahasiswa Kerja Praktik (Randy, Hikmah, & Rafa).</p>
+        </footer>
     </div>
 </div>
 

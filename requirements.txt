@@ -1,25 +1,24 @@
 # Flask Framework
-Flask==3.0.3
+Flask[async]==3.0.3
 
 # Data Handling and Excel
 pandas==2.2.2
 openpyxl==3.1.2
 
-# Scheduler & Feed Parser
-APScheduler==3.10.4
+# Sentiment Analysis Libraries
+scikit-learn==1.5.0
+Sastrawi==1.0.1
+nltk==3.8.1
+
+# Scraping & Web Libraries (Cepat & Andal)
+requests==2.32.3
 feedparser==6.0.11
+beautifulsoup4==4.12.3
+aiohttp==3.9.5
+nest-asyncio==1.6.0
+selenium==4.22.0
+webdriver-manager==4.0.1
 
 # Environment
 python-dotenv==1.0.1
 python-dateutil==2.9.0.post0
-
-# Sentiment Analysis Libraries
-scikit-learn==1.6.1
-Sastrawi==1.0.1
-nltk==3.8.1
-
-# New Scraping Libraries
-selenium==4.22.0
-webdriver-manager
-beautifulsoup4==4.12.3
-requests==2.32.3
