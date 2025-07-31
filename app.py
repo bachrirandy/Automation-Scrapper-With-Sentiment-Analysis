@@ -35,10 +35,14 @@ def analisis():
     sentiment_filter = request.args.get('filter', None)
     conn = database.get_db_connection()
     try:
-        full_df = pd.read_sql_query("SELECT * FROM analisis_data", conn)
+        # Ambil semua data sekali saja untuk efisiensi
+        all_data_query = "SELECT * FROM analisis_data"
+        full_df = pd.read_sql_query(all_data_query, conn)
     except pd.io.sql.DatabaseError:
         full_df = pd.DataFrame()
-    conn.close()
+    finally:
+        conn.close()
+
     total_berita = len(full_df)
     positif_count, negatif_count, netral_count = 0, 0, 0
     if not full_df.empty and 'sentimen' in full_df.columns:
@@ -46,35 +50,47 @@ def analisis():
         positif_count = int(sentimen_counts_total.get('Positif', 0))
         negatif_count = int(sentimen_counts_total.get('Negatif', 0))
         netral_count = int(sentimen_counts_total.get('Netral', 0))
+
+    # Data untuk Pie Chart dan Tabel (ini yang difilter)
     if sentiment_filter and not full_df.empty:
-        df_for_charts = full_df[full_df['sentimen'] == sentiment_filter].copy()
+        df_for_display = full_df[full_df['sentimen'] == sentiment_filter].copy()
+        analysis_list = database.get_filtered_analisis_data(sentiment_filter)
     else:
-        df_for_charts = full_df.copy()
+        df_for_display = full_df.copy()
+        # ▼▼▼ PERBAIKAN DI SINI ▼▼▼
+        analysis_list = database.get_filtered_analisis_data() # Panggil fungsi yang benar
+        # ▲▲▲ AKHIR PERBAIKAN ▲▲▲
+
     sentimen_labels, sentimen_data, sentimen_colors = [], [], []
     color_map = {'Positif': '#198754', 'Negatif': '#dc3545', 'Netral': '#6c757d'}
-    if not df_for_charts.empty and 'sentimen' in df_for_charts.columns:
-        sentimen_counts_chart = df_for_charts['sentimen'].value_counts()
+    if not df_for_display.empty and 'sentimen' in df_for_display.columns:
+        sentimen_counts_chart = df_for_display['sentimen'].value_counts()
         sentimen_labels = sentimen_counts_chart.index.tolist()
         sentimen_data = sentimen_counts_chart.values.tolist()
         sentimen_colors = [color_map.get(label, '#CCCCCC') for label in sentimen_labels]
-    analysis_list = database.get_filtered_analisis_data(sentiment_filter)
     
+    # Logika tren 7 hari terakhir SEKARANG SELALU MENGGUNAKAN DATA LENGKAP (full_df)
     trend_labels, trend_positif, trend_negatif, trend_netral = [], [], [], []
-    if not df_for_charts.empty and 'tanggal' in df_for_charts.columns:
-        df_for_charts['tanggal_lengkap'] = pd.to_datetime(df_for_charts['tahun'].astype(str) + '-' + df_for_charts['bulan'].astype(str) + '-' + df_for_charts['tanggal'].astype(str), errors='coerce')
-        df_for_charts.dropna(subset=['tanggal_lengkap'], inplace=True)
+    if not full_df.empty and 'tanggal' in full_df.columns:
+        df_for_trend = full_df.copy()
+        df_for_trend['tanggal_lengkap'] = pd.to_datetime(df_for_trend['tahun'].astype(str) + '-' + df_for_trend['bulan'].astype(str) + '-' + df_for_trend['tanggal'].astype(str), errors='coerce')
+        df_for_trend.dropna(subset=['tanggal_lengkap'], inplace=True)
         
-        if not df_for_charts.empty:
+        if not df_for_trend.empty:
             seven_days_ago = datetime.now() - timedelta(days=7)
-            df_last_7_days = df_for_charts[df_for_charts['tanggal_lengkap'] >= seven_days_ago]
+            df_last_7_days = df_for_trend[df_for_trend['tanggal_lengkap'] >= seven_days_ago]
             
             if not df_last_7_days.empty:
                 sentiment_trend = df_last_7_days.groupby([df_last_7_days['tanggal_lengkap'].dt.date, 'sentimen']).size().unstack(fill_value=0).reindex(columns=['Positif', 'Negatif', 'Netral'], fill_value=0)
-                if not sentiment_trend.empty:
-                    trend_labels = [d.strftime('%b %d') for d in sentiment_trend.index]
-                    trend_positif = sentiment_trend['Positif'].tolist()
-                    trend_negatif = sentiment_trend['Negatif'].tolist()
-                    trend_netral = sentiment_trend['Netral'].tolist()
+                
+                date_range = pd.date_range(end=datetime.now().date(), periods=7)
+                sentiment_trend.index = pd.to_datetime(sentiment_trend.index)
+                sentiment_trend = sentiment_trend.reindex(date_range, fill_value=0)
+
+                trend_labels = [d.strftime('%b %d') for d in sentiment_trend.index]
+                trend_positif = sentiment_trend['Positif'].tolist()
+                trend_negatif = sentiment_trend['Negatif'].tolist()
+                trend_netral = sentiment_trend['Netral'].tolist()
 
     return render_template(
         'analisis/analisis.html',
@@ -82,7 +98,6 @@ def analisis():
         sentimen_labels=sentimen_labels, sentimen_data=sentimen_data, sentimen_colors=sentimen_colors,
         analysis_list=analysis_list, active_filter=sentiment_filter,
         latest_news=database.get_latest_analisis_data(5),
-        # ▼▼▼ BARIS-BARIS INI YANG DIPERBAIKI ▼▼▼
         trend_labels=trend_labels,
         trend_positif_data=trend_positif,
         trend_negatif_data=trend_negatif,

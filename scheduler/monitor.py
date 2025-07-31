@@ -1,5 +1,3 @@
-# pln-news-monitor/scheduler/monitor.py
-
 import feedparser
 from urllib.parse import quote
 from utils import database, scraper, sentiment # Tambahkan import sentiment

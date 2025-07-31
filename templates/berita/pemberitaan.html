@@ -4,7 +4,6 @@
 
 {% block content %}
 
-<!-- Form untuk Menambah Berita Manual -->
 <div class="card mb-4 shadow-sm">
     <div class="card-header bg-light">
         <h5 class="mb-0"><i class="bi bi-input-cursor-text"></i> Tambah Berita Manual</h5>
@@ -26,7 +25,6 @@
                 </div>
                 <div class="col-md-6 mb-3">
                     <label for="kategori_media" class="form-label fw-bold">Kategori Media</label>
-                    <!-- ▼▼▼ DROPDOWN INI DIPERBARUI SESUAI FORMAT ANDA ▼▼▼ -->
                     <select class="form-select" id="kategori_media" name="kategori_media" required>
                         <option value="Media Online - Local & Lainnya Media Online" selected>Media Online - Local & Lainnya Media Online</option>
                         <option value="TV - Local & Lainnya Tv">TV - Local & Lainnya Tv</option>
@@ -35,8 +33,7 @@
                         <option value="Radio - Local & Lainnya Radio">Radio - Local & Lainnya Radio</option>
                         <option value="Media Cetak - Local & Lainnya Media Cetak">Media Cetak - Local & Lainnya Media Cetak</option>
                     </select>
-                    <!-- ▲▲▲ AKHIR PERUBAHAN ▲▲▲ -->
-                </div>
+                    </div>
             </div>
             <button class="btn btn-primary w-100" type="submit">
                 <i class="bi bi-plus-circle"></i> Tambah & Proses
@@ -45,7 +42,6 @@
     </div>
 </div>
 
-<!-- Tabel Utama untuk Menampilkan Data Berita -->
 <div class="card shadow-sm">
     <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap">
         <h5 class="mb-0 me-3">Dokumentasi Pemberitaan</h5>
@@ -102,7 +98,7 @@
                         <td><a href="{{ news.link_pemberitaan }}" target="_blank">Kunjungi</a></td>
                         <td>{{ news.nama_media }}</td>
                         <td style="min-width: 220px;">
-                             <form action="{{ url_for('edit_news_route', news_id=news.id) }}" method="POST">
+                                <form action="{{ url_for('edit_news_route', news_id=news.id) }}" method="POST">
                                 <input type="hidden" name="judul_pemberitaan" value="{{ news.judul_pemberitaan }}">
                                 <input type="hidden" name="nama_media" value="{{ news.nama_media }}">
                                 <input type="hidden" name="tanggal" value="{{ news.tanggal }}">
@@ -110,7 +106,6 @@
                                 <input type="hidden" name="tahun" value="{{ news.tahun }}">
                                 <input type="hidden" name="media_pemberitaan" value="{{ news.media_pemberitaan }}">
 
-                                <!-- ▼▼▼ DROPDOWN INI DIPERBARUI SESUAI FORMAT ANDA ▼▼▼ -->
                                 <select name="kategori_media" class="form-select form-select-sm" onchange="this.form.submit()">
                                     <option value="Media Online - Local & Lainnya Media Online" {% if news.kategori_media == 'Media Online - Local & Lainnya Media Online' %}selected{% endif %}>Media Online - Local & Lainnya Media Online</option>
                                     <option value="TV - Local & Lainnya Tv" {% if news.kategori_media == 'TV - Local & Lainnya Tv' %}selected{% endif %}>TV - Local & Lainnya Tv</option>
@@ -120,8 +115,7 @@
                                     <option value="Media Cetak - Local & Lainnya Media Cetak" {% if news.kategori_media == 'Media Cetak - Local & Lainnya Media Cetak' %}selected{% endif %}>Media Cetak - Local & Lainnya Media Cetak</option>
                                     <option value="Belum Dikategorikan" {% if news.kategori_media == 'Belum Dikategorikan' %}selected{% endif %}>Belum Dikategorikan</option>
                                 </select>
-                                <!-- ▲▲▲ AKHIR PERUBAHAN ▲▲▲ -->
-                            </form>
+                                </form>
                         </td>
                         <td class="text-center">
                             <div class="btn-group" role="group">
@@ -158,7 +152,6 @@
     </div>
 </div>
 
-<!-- Modal untuk Edit Berita -->
 <div class="modal fade" id="editNewsModal" tabindex="-1" aria-labelledby="editNewsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -168,7 +161,6 @@
             </div>
             <div class="modal-body">
                 <form id="edit-form" method="POST">
-                    <!-- ... (form fields for judul, nama_media, tanggal, etc.) ... -->
                     <div class="mb-3">
                         <label for="edit-judul_pemberitaan" class="form-label fw-bold">Judul Pemberitaan</label>
                         <textarea class="form-control" id="edit-judul_pemberitaan" name="judul_pemberitaan" rows="3" required></textarea>
@@ -202,7 +194,6 @@
 
                     <div class="mb-3">
                         <label for="edit-kategori_media" class="form-label fw-bold">Kategori Media</label>
-                        <!-- ▼▼▼ DROPDOWN INI DIPERBARUI SESUAI FORMAT ANDA ▼▼▼ -->
                         <select class="form-select" id="edit-kategori_media" name="kategori_media" required>
                             <option value="Media Online - Local & Lainnya Media Online">Media Online - Local & Lainnya Media Online</option>
                             <option value="TV - Local & Lainnya Tv">TV - Local & Lainnya Tv</option>
@@ -212,8 +203,7 @@
                             <option value="Media Cetak - Local & Lainnya Media Cetak">Media Cetak - Local & Lainnya Media Cetak</option>
                             <option value="Belum Dikategorikan">Belum Dikategorikan</option>
                         </select>
-                        <!-- ▲▲▲ AKHIR PERUBAHAN ▲▲▲ -->
-                    </div>
+                        </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -224,7 +214,6 @@
     </div>
 </div>
 
-<!-- JavaScript untuk Modal (Tidak Berubah) -->
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     const editModal = document.getElementById('editNewsModal');
