@@ -23,10 +23,10 @@ Aplikasi ini memungkinkan **scraping otomatis** artikel berita *online*, *prepro
 | Kategori | Teknologi | Deskripsi |
 | :--- | :--- | :--- |
 | **Bahasa** | Python 3.x | Bahasa utama untuk pengembangan. |
-| **Web Scraping** | `requests`, `BeautifulSoup`, `Selenium` (sesuai implementasi) | Pustaka untuk pengambilan data dari web. |
+| **Web Scraping** | `requests`, `BeautifulSoup`, `Selenium`| Pustaka untuk pengambilan data dari web. |
 | **Machine Learning** | `scikit-learn` | Pustaka untuk TF-IDF Vectorizer dan model **Multinomial Naive Bayes**. |
 | **Web Framework** | Flask | *Micro-framework* Python untuk aplikasi web. |
-| **Database** | SQLite (atau *database* ringan lainnya) | Penyimpanan hasil analisis lokal. |
+| **Database** | MySQL | Penyimpanan hasil analisis lokal. |
 | **Otomatisasi** | *Native Scheduler* / *Job Runner* | Untuk menjalankan tugas *scraping* berkala. |
 | **Front-end** | HTML, CSS | Untuk tampilan *web interface*. |
 
@@ -39,18 +39,22 @@ Aplikasi ini memungkinkan **scraping otomatis** artikel berita *online*, *prepro
 ```bash
 git clone [https://github.com/](https://github.com/)<username>/Automation-Scrapper-With-Sentiment-Analysis.git
 cd Automation-Scrapper-With-Sentiment-Analysis
-
-# Untuk Linux / macOS
-python3 -m venv venv
-source venv/bin/activate
-# Untuk Windows
+```
+### 2. Setup Virtual Environment
+```bash
 python -m venv venv
-venv\Scripts\activate
-
+source venv/bin/activate  # On Windows: .\venv\Scripts\activate
+```
+### 3. Install Dependencies
+```bash
 pip install -r requirements.txt
-
+```
+### 4. Train Model
+```bash
 python train_and_save_model.py
-
+```
+### 5. Run Web Application
+```bash
 python app.py
-
-python test_scraper.py
+```
+The application will be available at the URL displayed in the console (typically **http://127.0.0.1:5000**).
