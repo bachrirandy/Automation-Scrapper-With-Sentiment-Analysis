@@ -35,7 +35,7 @@ This application enables **automated online news article scraping**, text prepro
 ### 1. Clone Repository
 
 ```bash
-git clone [https://github.com/](https://github.com/)<username>/Automation-Scrapper-With-Sentiment-Analysis.git
+git clone [https://github.com/](https://github.com/)bachrirandy/Automation-Scrapper-With-Sentiment-Analysis.git
 cd Automation-Scrapper-With-Sentiment-Analysis
 ```
 ### 2. Setup Virtual Environment
